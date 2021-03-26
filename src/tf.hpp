@@ -1,5 +1,5 @@
-#ifndef TASKFRAMEWORK_TF_HPP
-#define TASKFRAMEWORK_TF_HPP
+#ifndef TASKFLOW_TF_HPP
+#define TASKFLOW_TF_HPP
 #include <cstdio>
 #include <thread>
 #include <vector>
@@ -11,13 +11,13 @@
 #include <cassert>
 
 namespace tf {
-using TaskIdx = int;
 class Context;
 }
+#include "hashes.hpp"
 #include "taskflow.hpp"
 #include "taskpool.hpp"
 #include "scheduler.hpp"
-#include "xstream_pool.hpp"
+#include "xstreamPool.hpp"
 #include "context.hpp"
 
-#endif // TASKFRAMEWORK_TF_HPP
+#endif // TASKFLOW_TF_HPP

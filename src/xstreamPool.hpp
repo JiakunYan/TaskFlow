@@ -1,5 +1,5 @@
-#ifndef TASKFRAMEWORK_XSTREAM_POOL_HPP
-#define TASKFRAMEWORK_XSTREAM_POOL_HPP
+#ifndef TASKFLOW_XSTREAM_POOL_HPP
+#define TASKFLOW_XSTREAM_POOL_HPP
 
 namespace tf {
 class XStreamPool {
@@ -16,4 +16,4 @@ private:
 
 void xstream_fn(Context *context, int id);
 }
-#endif // TASKFRAMEWORK_XSTREAM_POOL_HPP
+#endif // TASKFLOW_XSTREAM_POOL_HPP

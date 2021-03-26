@@ -12,28 +12,9 @@ Scheduler::Scheduler(Context *context_, int nxstreams_)
       nxstreams(nxstreams_),
       tasks_in_flight(0) {}
 
-Task* Scheduler::getNextReadyTask() {
-  Task *task;
-  readyTasksLock.lock();
-  if (!readyTasks.empty()) {
-    task = readyTasks.top();
-    readyTasks.pop();
-  } else {
-    task = nullptr;
-  }
-  readyTasksLock.unlock();
-  return task;
-}
-
-void Scheduler::putReadyTask(Task *task) {
-  readyTasksLock.lock();
-  readyTasks.push(task);
-  readyTasksLock.unlock();
-}
-
 void Scheduler::run(int id) {
   while (true) {
-    Task* task = getNextReadyTask();
+    Task* task = context->taskpool.getNextReadyTask();
     if (task == nullptr) {
       if (testCompletion())
         break;

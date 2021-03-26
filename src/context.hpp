@@ -1,27 +1,37 @@
-#ifndef TASKFRAMEWORK_CONTEXT_HPP
-#define TASKFRAMEWORK_CONTEXT_HPP
+#ifndef TASKFLOW_CONTEXT_HPP
+#define TASKFLOW_CONTEXT_HPP
 
 namespace tf {
 class Context {
 public:
   Context(int nxstreams_)
-      : xstream_pool(this, nxstreams_),
+      : xstreamPool(this, nxstreams_),
         taskpool(this, nxstreams_),
         scheduler(this, nxstreams_) {}
-  void signal(Taskflow& taskflow, TaskIdx taskIdx) {
-    taskpool.signal(taskflow, taskIdx);
-  }
-  void start() {
-    xstream_pool.start();
-  }
-  void join() {
-    xstream_pool.join();
+
+  template <typename TaskIdx>
+  void signal(Taskflow<TaskIdx>& taskflow, TaskIdx taskIdx) {
+    Task *p_task = taskflow.signal(taskIdx);
+    if (p_task != nullptr) {
+      taskpool.putReadyTask(p_task);
+    }
   }
 
-  XStreamPool xstream_pool;
+  void start() {
+    xstreamPool.start();
+  }
+
+  void join() {
+    xstreamPool.join();
+  }
+
+private:
+  friend class Scheduler;
+  friend void xstream_fn(Context *context, int id);
+  XStreamPool xstreamPool;
   Taskpool taskpool;
   Scheduler scheduler;
 };
 }
 
-#endif // TASKFRAMEWORK_CONTEXT_HPP
+#endif // TASKFLOW_CONTEXT_HPP
