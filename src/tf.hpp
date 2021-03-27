@@ -13,10 +13,11 @@
 namespace tf {
 class Context;
 }
+#include "config.hpp"
 #include "hashes.hpp"
-#include "taskflow.hpp"
-#include "taskpool.hpp"
 #include "scheduler.hpp"
+#include "taskclass.hpp"
+#include "taskpool.hpp"
 #include "xstreamPool.hpp"
 #include "context.hpp"
 

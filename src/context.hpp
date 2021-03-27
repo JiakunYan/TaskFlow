@@ -10,8 +10,8 @@ public:
         scheduler(this, nxstreams_) {}
 
   template <typename TaskIdx>
-  void signal(Taskflow<TaskIdx>& taskflow, TaskIdx taskIdx) {
-    Task *p_task = taskflow.signal(taskIdx);
+  void signal(TaskClass<TaskIdx>& taskClass, TaskIdx taskIdx) {
+    Task *p_task = taskClass.signal(taskIdx);
     if (p_task != nullptr) {
       taskpool.putReadyTask(p_task);
     }

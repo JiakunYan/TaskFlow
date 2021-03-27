@@ -23,10 +23,10 @@ void Scheduler::run(int id) {
     }
     ++tasks_in_flight;
     task->run();
-    task->status = TaskStatus::COMPLETED;
+    task->status = TaskStatus::DONE;
     switch (task->status) {
-    case TaskStatus::COMPLETED:
-      task->fulfill();
+    case TaskStatus::DONE:
+      task->outdep();
       delete task;
       break;
     default:

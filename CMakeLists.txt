@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(TaskFlow VERSION 0.2 LANGUAGES CXX)
+project(TaskFlow VERSION 0.2.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 11)
 
 find_package(Threads REQUIRED)

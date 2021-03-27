@@ -12,6 +12,6 @@
 completion detection is not trivial.
 
 ### Questions:
-- Can `Taskflow` be a template class?
+- Can `TaskClass` be a template class?
 - Should we support task `yield`? 
   We need Argobots to support `yield`.
