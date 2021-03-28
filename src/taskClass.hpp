@@ -1,3 +1,5 @@
+#include <utility>
+
 #ifndef TASKFLOW_TASKCLASS_HPP
 #define TASKFLOW_TASKCLASS_HPP
 
@@ -10,9 +12,8 @@ enum TaskStatus {
 };
 
 struct Task {
-  TaskStatus status;
+  Context *p_context;
   std::function<void()> run;
-  std::function<void()> outdep;
   double priority;
   std::string name;
 
@@ -77,8 +78,7 @@ public:
 
   Task* makeTask(TaskIdx taskIdx) {
     Task *t = new Task();
-    t->run = [this, taskIdx]() { task_fn(taskIdx); };
-    t->outdep = [this, taskIdx]() { outdep_fn(taskIdx); };
+    t->run = [this, taskIdx]() { task_fn(taskIdx); outdep_fn(taskIdx); };
     t->name = name_fn(taskIdx);
     t->priority = priority_fn(taskIdx);
     // We have not implemented the distributed memory verison yet.
@@ -92,7 +92,6 @@ public:
     int indegree = indep_fn(taskIdx);
     if (indegree == 1) {
       Task *p_task = makeTask(taskIdx);
-      p_task->status = TaskStatus::READY;
       return p_task;
     }
     Task* ret = nullptr;
@@ -109,7 +108,6 @@ public:
       if (count == 0) {
         depCounter.erase(taskIdx);
         Task *p_task = makeTask(taskIdx);
-        p_task->status = TaskStatus::READY;
         ret = p_task;
       }
     }

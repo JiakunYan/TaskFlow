@@ -4,16 +4,16 @@
 namespace tf {
 class Context {
 public:
-  Context(int nxstreams_)
-      : xstreamPool(this, nxstreams_),
-        taskpool(this, nxstreams_),
-        scheduler(this, nxstreams_) {}
+  Context(int nxstreams_);
+  ~Context();
 
   template <typename TaskIdx>
   void signal(TaskClass<TaskIdx>& taskClass, TaskIdx taskIdx) {
     Task *p_task = taskClass.signal(taskIdx);
     if (p_task != nullptr) {
-      taskpool.putReadyTask(p_task);
+      p_task->p_context = this;
+      ++nTaskInFlight;
+      xstreamPool.pushReadyTask(p_task);
     }
   }
 
@@ -22,15 +22,31 @@ public:
   }
 
   void join() {
+    while (nTaskInFlight.load() != 0) {
+      ABT_thread_yield();
+    }
     xstreamPool.join();
   }
 
+  inline int rank_me() {
+    int ret, rank;
+    ABT_xstream self;
+    ret = ABT_xstream_self(&self);
+    TF_CHECK_ABT(ret);
+    ret = ABT_xstream_get_rank(self, &rank);
+    TF_CHECK_ABT(ret);
+    return rank;
+  }
+
+  inline int rank_n() {
+    return nxstreams;
+  }
+
 private:
-  friend class Scheduler;
-  friend void xstream_fn(Context *context, int id);
+  friend void runTaskWrapper(void *args);
+  int nxstreams;
   XStreamPool xstreamPool;
-  Taskpool taskpool;
-  Scheduler scheduler;
+  std::atomic<int64_t> nTaskInFlight;
 };
 }
 

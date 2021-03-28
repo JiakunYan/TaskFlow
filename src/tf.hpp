@@ -10,14 +10,17 @@
 #include <atomic>
 #include <cassert>
 
+#include "abt.h"
+
 namespace tf {
+void runTaskWrapper(void *args);
 class Context;
 }
+
 #include "config.hpp"
+#include "utils.hpp"
 #include "hashes.hpp"
-#include "scheduler.hpp"
-#include "taskclass.hpp"
-#include "taskpool.hpp"
+#include "taskClass.hpp"
 #include "xstreamPool.hpp"
 #include "context.hpp"
 

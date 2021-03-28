@@ -6,29 +6,62 @@
 using namespace std;
 
 namespace tf {
+void runTaskWrapper(void *args) {
+  auto p_task = static_cast<Task*>(args);
+  p_task->run();
+  --p_task->p_context->nTaskInFlight;
+}
+
 XStreamPool::XStreamPool(Context *context_, int nxstreams_)
     : context(context_),
-      nxstreams(nxstreams_) {}
+      nxstreams(nxstreams_),
+      xstreams(nxstreams_),
+      pools(nxstreams_) {}
 
 XStreamPool::~XStreamPool() {
-  assert(xstreams.empty());
+  xstreams.clear();
+  pools.clear();
+}
+
+void XStreamPool::init() {
+  int ret;
+//  ret = ABT_xstream_self(&xstreams[0]);
+//  TF_CHECK_ABT(ret);
+  for (int i = 0; i < nxstreams; i++) {
+    ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
+    TF_CHECK_ABT(ret);
+  }
+
+  for (int i = 0; i < nxstreams; i++) {
+    ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
+    TF_CHECK_ABT(ret);
+  }
+}
+
+void XStreamPool::finalize() {
+  int ret;
+  for (int i = 0; i < nxstreams; ++i) {
+    ret = ABT_xstream_free(&xstreams[i]);
+    TF_CHECK_ABT(ret);
+  }
 }
 
 void XStreamPool::start() {
-  for (int i = 0; i < nxstreams; ++i) {
-    thread xstream(xstream_fn, context, i);
-    xstreams.push_back(move(xstream));
-  }
 }
 
 void XStreamPool::join() {
+  int ret;
   for (int i = 0; i < nxstreams; ++i) {
-    xstreams[i].join();
+    ret = ABT_xstream_join(xstreams[i]);
+    TF_CHECK_ABT(ret);
   }
-  xstreams.clear();
 }
 
-void xstream_fn(Context *context, int id) {
-  context->scheduler.run(id);
+void XStreamPool::pushReadyTask(Task *p_task) {
+  static int i = 0;
+  int ret;
+  ret = ABT_task_create(pools[i++ % nxstreams], runTaskWrapper,
+                        p_task, nullptr);
+  TF_CHECK_ABT(ret);
 }
 }

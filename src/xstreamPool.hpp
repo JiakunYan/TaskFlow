@@ -6,14 +6,17 @@ class XStreamPool {
 public:
   explicit XStreamPool(Context *context_, int nxstreams_);
   ~XStreamPool();
+  void init();
+  void finalize();
   void start();
   void join();
+  void pushReadyTask(Task *p_task);
+
 private:
   Context *context;
   int nxstreams;
-  std::vector<std::thread> xstreams;
+  std::vector<ABT_xstream> xstreams;
+  std::vector<ABT_pool> pools;
 };
-
-void xstream_fn(Context *context, int id);
-}
+} // namespace tf
 #endif // TASKFLOW_XSTREAM_POOL_HPP

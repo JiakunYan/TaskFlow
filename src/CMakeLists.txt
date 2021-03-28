@@ -1,7 +1,6 @@
 target_include_directories(tf-lib PUBLIC .)
 target_sources(tf-lib PRIVATE
-        taskpool.cpp
-        scheduler.cpp
+        context.cpp
         xstreamPool.cpp)
 
 configure_file(config.hpp.in config.hpp @ONLY)

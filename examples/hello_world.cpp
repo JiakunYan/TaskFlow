@@ -12,8 +12,9 @@ int main() {
   // define tasks
   tf::TaskClass<int2> helloWorld;
   helloWorld
-      .setTask([](int2 k) {
-        printf("Hello world from task (%d, %d)\n", k[0], k[1]);
+      .setTask([&](int2 k) {
+        printf("Hello world from task (%d, %d) of xstream %d/%d\n",
+               k[0], k[1], context.rank_me(), context.rank_n());
       })
       .setInDep([](int2 k) { return 1; })
       .setOutDep([&](int2 k) {
