@@ -1,0 +1,9 @@
+/home/eli9/Desktop/taskFramework/build/CMakeFiles/rebuild_cache.dir
+/home/eli9/Desktop/taskFramework/build/CMakeFiles/edit_cache.dir
+/home/eli9/Desktop/taskFramework/build/CMakeFiles/tf-lib.dir
+/home/eli9/Desktop/taskFramework/build/src/CMakeFiles/rebuild_cache.dir
+/home/eli9/Desktop/taskFramework/build/src/CMakeFiles/edit_cache.dir
+/home/eli9/Desktop/taskFramework/build/examples/CMakeFiles/edit_cache.dir
+/home/eli9/Desktop/taskFramework/build/examples/CMakeFiles/rebuild_cache.dir
+/home/eli9/Desktop/taskFramework/build/examples/CMakeFiles/cholesky.dir
+/home/eli9/Desktop/taskFramework/build/examples/CMakeFiles/hello_world.dir
