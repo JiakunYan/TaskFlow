@@ -1,2 +1,0 @@
-/usr/bin/ar qc libtf-lib.a  CMakeFiles/tf-lib.dir/src/taskpool.cpp.o CMakeFiles/tf-lib.dir/src/scheduler.cpp.o CMakeFiles/tf-lib.dir/src/xstreamPool.cpp.o
-/usr/bin/ranlib libtf-lib.a

@@ -1,1 +1,0 @@
-/usr/bin/c++     CMakeFiles/cholesky.dir/cholesky.cpp.o  -o cholesky  ../libtf-lib.a -lpthread 
