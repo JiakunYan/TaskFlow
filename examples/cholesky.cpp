@@ -1,7 +1,7 @@
 #include <iostream>
 #include <array>
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Cholesky>
+#include <Eigen/Core>
+#include <Eigen/Cholesky>
 #include <map>
 #include "tf.hpp"
 
@@ -26,8 +26,8 @@ int main() {
   tf::Taskflow<int3> gemm_tf;
 
   // Set global variabls
-  int N = 3;
-  int n = 1;
+  int N = 100;
+  int n = 10;
   
 
   int p = 1;
@@ -35,8 +35,7 @@ int main() {
 
   // Create an matrix A
   // Form the matrix : let every node have a copy of A for now
-  /*
-  auto gen = [&](int i, int j) { 
+  auto gen = [&](int i, int j) {
       if(i == j) {
           return static_cast<double>(N*n+2);
       } else {
@@ -52,20 +51,20 @@ int main() {
   };
   MatrixXd A = MatrixXd::NullaryExpr(N * n, N * n, gen);
   MatrixXd Aref = A;
-  //A = A.triangularView<Lower>();
-  */
- 
+  A = A.triangularView<Lower>();
+
   // WiKi example
-  MatrixXd A(N, N);
-  A << 4, 12, -16,
-       12, 37, -43,
-       -16, -43, 98;
+//  MatrixXd A(N, N);
+//  A << 4, 12, -16,
+//       12, 37, -43,
+//       -16, -43, 98;
+//  MatrixXd Aref = A;
 
   
-  IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-  cout << "Input Matrix A:" << endl;
-  cout << A.format(CleanFmt) << endl;
-  cout << endl;
+//  IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+//  cout << "Input Matrix A:" << endl;
+//  cout << A.format(CleanFmt) << endl;
+//  cout << endl;
 
   // Mapper
   auto block2rank = [&](int2 ij){
@@ -198,25 +197,40 @@ int main() {
   
   // signal the first task
   context.signal(potf_tf, 0);
-  
 
   context.start();
   context.join();
 
-  cout << "Solved L from the Cholesky decomposition: " << endl;
   for (int i = 0; i < N; i++) {
-    cout << "[ ";
     for (int j = 0; j <= i; j++) {
-      cout << Mat.at({i, j}) << " ";
+      A.block(i * n, j * n, n, n) = Mat.at({i,j});
     }
-    for (int k = 0; k < N - 1 - i; k++) {
-      cout << "0" << " ";
+    for (int k = i+1; k < N; k++) {
+      A.block(i * n, k * n, n, n) = MatrixXd::Zero(n, n);
     }
-    
-    cout << "]"  << endl;
   }
-  
-  cout << endl;
+
+//  cout << "Output Matrix A:" << endl;
+//  cout << A.format(CleanFmt) << endl;
+//  cout << endl;
+
+  {
+    auto L = A.triangularView<Lower>();
+    VectorXd x = VectorXd::Random(n * N);
+    VectorXd b = Aref*x;
+    VectorXd bref = b;
+    L.solveInPlace(b);
+    L.transpose().solveInPlace(b);
+    double error = (b - x).norm() / x.norm();
+    cout << "Error solve: " << error << endl;
+  }
+  // Test 2
+//  {
+//    MatrixXd L = A.triangularView<Lower>();
+//    MatrixXd A = L * L.transpose();
+//    double error = (A - Aref).norm() / Aref.norm();
+//    cout << "Error LLT : " << error << endl;
+//  }
 
   return 0;
 }

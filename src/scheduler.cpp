@@ -23,7 +23,6 @@ void Scheduler::run(int id) {
     }
     ++tasks_in_flight;
     task->run();
-    printf("%s\n", (task->name).c_str());
     task->status = TaskStatus::COMPLETED;
     switch (task->status) {
     case TaskStatus::COMPLETED:
