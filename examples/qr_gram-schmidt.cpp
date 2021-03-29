@@ -386,7 +386,7 @@ double subdot_product (double * x, double * y, int length, int index) {
     rank-deficient then the resulting columns of Q may not
     exhibit the orthogonality property.                        */
 
-void gramSchmidt (double ** a, double ** r, int m, int n, bool full) {
+void gramSchmidt (double ** a, double ** q, double ** r, int m, int n, bool full) {
     double anorm, tol = 10e-7;
 
     // Set maximum concurrency for current work
@@ -458,7 +458,6 @@ void gramSchmidt (double ** a, double ** r, int m, int n, bool full) {
 
     // signal the first task
     context.signal(rdia_tf, 0);
-
     context.start();
     context.join();
 
@@ -523,20 +522,23 @@ int main () {
 
     /* allocate memory for the matrices A and R */
     double ** a = new double*[q_n];
+    double ** q = new double*[q_n];
     double ** r = new double*[n];
     for(i = 0; i < n; i++) {
         a[i] = new double[m];
+        q[i] = new double[m];
         r[i] = new double[r_m];
     }
     for(; i < q_n; i++) {
         a[i] = new double[m];
+        q[i] = new double[m];
     }
 
     /* initialize the values in matrix A (only n columns regardless of
        thin QR or full QR) */
     for(i = 0; i < n; i++) {
         for(j = i; j < m; j++) {
-            a[i][j] = j - i + 1; // this choice of values was arbitrary
+            a[i][j] = j - i + 2; // this choice of values was arbitrary
         }
     }
 
@@ -551,7 +553,7 @@ int main () {
     std::cout << std::endl;
 
     /* execute gramSchmidt to compute QR factorization */
-    gramSchmidt(a, r, m, n, full);
+    gramSchmidt(a, q, r, m, n, full);
 
     /* print the matrix Q resulting from gramSchmidt */
     std::cout << "Q = " << std::endl;
@@ -589,12 +591,15 @@ int main () {
     /* free memory */
     for(i = 0; i < n; i++) {
         delete[] a[i];
+        delete[] q[i];
         delete[] r[i];
     }
     for(; i < q_n; i++) {
         delete[] a[i];
+        delete[] q[i];
     }
     delete[] a;  
+    delete[] q;
     delete[] r;
 
     return 0;       // exit main
