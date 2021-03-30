@@ -1,5 +1,8 @@
 #include <iostream>
 #include <array>
+#include <ctime>
+#include <ratio>
+#include <chrono>
 #include <Eigen/Core>
 #include <Eigen/Cholesky>
 #include <map>
@@ -13,7 +16,7 @@ typedef array<int, 2> int2;
 typedef array<int, 3> int3;
 
 // Global Constant
-const int n_threads = 3;
+const int n_threads = 12;
 
 int main() {
   
@@ -26,8 +29,8 @@ int main() {
   tf::Taskflow<int3> gemm_tf;
 
   // Set global variabls
-  int N = 100;
-  int n = 10;
+  int N = 160;
+  int n = 5;
   
 
   int p = 1;
@@ -61,7 +64,7 @@ int main() {
 //  MatrixXd Aref = A;
 
   
-//  IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 //  cout << "Input Matrix A:" << endl;
 //  cout << A.format(CleanFmt) << endl;
 //  cout << endl;
@@ -198,9 +201,18 @@ int main() {
   // signal the first task
   context.signal(potf_tf, 0);
 
+  auto start = chrono::high_resolution_clock::now();
+
+  // Start the context
   context.start();
   context.join();
+  auto end = chrono::high_resolution_clock::now();
 
+
+  chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(end - start);
+  printf("%lf\n", time_span.count());
+
+  // gathering A from Mat
   for (int i = 0; i < N; i++) {
     for (int j = 0; j <= i; j++) {
       A.block(i * n, j * n, n, n) = Mat.at({i,j});
@@ -210,9 +222,9 @@ int main() {
     }
   }
 
-//  cout << "Output Matrix A:" << endl;
-//  cout << A.format(CleanFmt) << endl;
-//  cout << endl;
+  cout << "Output Matrix A has the size of:" << endl;
+  cout << A.rows() << " " << A.cols() << endl;
+  cout << endl;
 
   {
     auto L = A.triangularView<Lower>();

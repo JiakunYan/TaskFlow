@@ -1,0 +1,23 @@
+Total size Use N * n = 800, n_threads = 3;
+
+Error solve: 9.24615e-16 (at the level of e-16)
+
+n = 1 : > 60 seconds
+n = 2 : 70.428515 seconds
+n = 5 : 6.809795 seconds
+n = 10 : 0.957150 seconds
+n = 20 : 0.245409 seconds
+n = 50 : 0.188474 seconds
+n = 100 : 0.206359 seconds
+n = 200 : 0.283005 seconds
+
+
+Total size Use N = 160, n = 5: (Size = 800)
+
+n_threads = 1 : 7.252739 seconds
+n_threads = 2 : 7.141920 seconds
+n_threads = 3 : 6.809795 seconds
+n_threads = 4 : 4.895430 seconds
+n_threads = 6 : 5.448606 seconds
+n_threads = 12 : 5.484024 seconds
+
