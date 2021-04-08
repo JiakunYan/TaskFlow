@@ -392,10 +392,10 @@ void gramSchmidt (double ** a, double ** q, double ** r, int m, int n, bool full
     // Set maximum concurrency for current work
     tf::Context context(n_threads);
 
-    tf::Taskflow<int> rdia_tf;
-    tf::Taskflow<int2> rother_tf;
+    tf::TaskClass<int> rdia_tf;
+    tf::TaskClass<int2> rother_tf;
 
-    rdia_tf.set_task([&](int i) {
+    rdia_tf.setTask([&](int i) {
         r[i][i] = norm(a[i], m);                  // r_ii = ||a_i||
 
         if(r[i][i] > tol) {
@@ -421,28 +421,28 @@ void gramSchmidt (double ** a, double ** q, double ** r, int m, int n, bool full
             scalar_div(a[i], anorm, m, a[i]);
         }
     })
-      .set_dependency([](int) {
+      .setInDep([](int) {
         return 1;
       })
-      .set_fulfill([&](int i) {
+      .setOutDep([&](int i) {
         if (i < n - 1) {
           context.signal(rother_tf, {i, i + 1});
         }
       })
-      .set_name([](int j) {
+      .setName([](int j) {
         return string("rdia_tf at ") + to_string(j);
       });
 
-    rother_tf.set_task([&](int2 ij) {
+    rother_tf.setTask([&](int2 ij) {
       int i = ij[0];
       int j = ij[1];
       r[j][i] = dot_product(a[i], a[j], m); // r_ij = a_i*a_j
       scalar_sub(a[i], r[j][i], m, a[j]);   // a_j -= r_ij a_i
     })
-      .set_dependency([](int2 ij) {
+      .setInDep([](int2 ij) {
         return 1;
       })
-      .set_fulfill([&](int2 ij) {
+      .setOutDep([&](int2 ij) {
         int i = ij[0];
         int j = ij[1];
         if (j < n - 1) {
@@ -452,7 +452,7 @@ void gramSchmidt (double ** a, double ** q, double ** r, int m, int n, bool full
           context.signal(rdia_tf, i + 1);
         }
       })
-      .set_name([](int2 ij) {
+      .setName([](int2 ij) {
         return string("rother_tf at ") + to_string(ij[0]) + "_" + to_string(ij[1]);
       });
 

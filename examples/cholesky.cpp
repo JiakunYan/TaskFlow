@@ -24,9 +24,9 @@ int main() {
   tf::Context context(n_threads);
 
   // Create three taskflows to be ran
-  tf::Taskflow<int> potf_tf;
-  tf::Taskflow<int2> trsm_tf;
-  tf::Taskflow<int3> gemm_tf;
+  tf::TaskClass<int> potf_tf;
+  tf::TaskClass<int2> trsm_tf;
+  tf::TaskClass<int3> gemm_tf;
 
   // Set global variabls
   int N = 160;
@@ -103,14 +103,14 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
   }
 
   // Create POTF tasks and declare dependencies 
-  potf_tf.set_task([&](int j) {
+  potf_tf.setTask([&](int j) {
     LLT<Ref<MatrixXd>> llt(Mat.at({j, j}));
     assert(llt.info() == Eigen::Success);
   })
-      .set_dependency([](int) {
+      .setInDep([](int) {
         return 1;
       })
-      .set_fulfill([&](int j) {
+      .setOutDep([&](int j) {
         /*
           potrf(j) should signal 
           trsm(j+1, j) across trsm(N, j)
@@ -120,22 +120,22 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
         }
         
       })
-      .set_name([](int j) {
+      .setName([](int j) {
         return string("POTF at ") + to_string(j);
       });
 
 
   // Create TRSM tasks and declare dependencies
-  trsm_tf.set_task([&](int2 ij) {
+  trsm_tf.setTask([&](int2 ij) {
     int i = ij[0];
     int j = ij[1];
     auto L = Mat.at({j, j}).triangularView<Lower>().transpose();
     Mat.at({i, j}) = L.solve<OnTheRight>(Mat.at({i, j}));
   })
-      .set_dependency([](int2 ij) {
+      .setInDep([](int2 ij) {
         return (ij[1] == 0 ? 1 : 2);
       })
-      .set_fulfill([&](int2 ij) {
+      .setOutDep([&](int2 ij) {
         /* 
           trsm(i, j) should signal
           gemm(i, j+1, j) across gemm(i, i, j)
@@ -162,25 +162,25 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
         }
         
       })
-      .set_name([](int2 ij) {
+      .setName([](int2 ij) {
         return string("TRSM at ") + to_string(ij[0]) + "_" + to_string(ij[1]);
       });
   
 
   // Create GEMM tasks and declare dependencies
-  gemm_tf.set_task([&](int3 ijk) {
+  gemm_tf.setTask([&](int3 ijk) {
     int i = ijk[0];
     int j = ijk[1];
     int k = ijk[2];
     Mat.at({i,j}).noalias() -= Mat.at({i,k}) * Mat.at({j,k}).transpose();
   })
-      .set_dependency([](int3 ijk) {
+      .setInDep([](int3 ijk) {
         int i = ijk[0];
         int j = ijk[1];
         int k = ijk[2];
         return (i == j ? 1 : 2) + (k > 0 ? 1 : 0);
       })
-      .set_fulfill([&](int3 ijk) {
+      .setOutDep([&](int3 ijk) {
         int i = ijk[0];
         int j = ijk[1];
         int k = ijk[2];
@@ -194,7 +194,7 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
         }
         
       })
-      .set_name([](int3 ijk) {
+      .setName([](int3 ijk) {
         return string("GEMM at ") + to_string(ijk[0]) + "_" + to_string(ijk[1]) + "_" + to_string(ijk[2]);
       });
   

@@ -346,8 +346,8 @@ int main()
   z_ = mat_;
  
   tf::Context context(3);
-  tf::Taskflow houseHolder;
-  houseHolder.set_task([](int k) {
+  tf::TaskClass houseHolder;
+  houseHolder.setTask([](int k) {
     cout << "Householder starts from task " << k << "!\n";
 
     Vector e(m_), x(m_);
@@ -379,14 +379,14 @@ int main()
 
     cout << "Householder ends from task " << k << "!\n";
   })
-      .set_dependency([](int k) {
+      .setInDep([](int k) {
         return 1;
       })
-      .set_fulfill([&](int k) {
+      .setOutDep([&](int k) {
         if (k < n_ && k < m_ - 1)
           context.signal(houseHolder, k+1);
       })
-      .set_name([](int k) {
+      .setName([](int k) {
         return string("houseHolder_") + to_string(k);
       });
 
