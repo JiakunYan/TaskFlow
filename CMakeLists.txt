@@ -11,3 +11,4 @@ target_link_libraries(tf-lib PUBLIC Argobots::Argobots Threads::Threads)
 
 add_subdirectory(src)
 add_subdirectory(examples)
+add_subdirectory(benchmarks)
