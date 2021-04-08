@@ -1,0 +1,10 @@
+Experiment Setup used for midterm report in Cholesky benchmark:
+
+x86_64 x86_64 x86_64 GNU/Linux
+
+gcc (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+
+AMD Ryzen 5 3600 6-Core Processor 
+6 Cores 12 threads
+
+
