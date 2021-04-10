@@ -58,7 +58,7 @@ void XStreamPool::join() {
 }
 
 void XStreamPool::pushReadyTask(Task *p_task) {
-  static int i = 0;
+  static std::atomic<int64_t> i(0);
   int ret;
   ret = ABT_task_create(pools[i++ % nxstreams], runTaskWrapper,
                         p_task, nullptr);

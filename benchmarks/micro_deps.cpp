@@ -4,7 +4,7 @@
 using namespace std;
 
 using int2 = std::array<int, 2>;
-const double totalWork = 2.0;
+const double totalWork = 1.0;
 int nthreads = 3;
 double spinTime = 1e-5;
 int nrows = nthreads;
