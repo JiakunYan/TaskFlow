@@ -51,15 +51,15 @@ def line_plot(title, xlabel, ylabel, data, fname='out.pdf', add_perfect=True, is
     for tick in ytick_range:
         if tick >= ymin and tick <= ymax:
             yticks.append(tick)
-    yticks.append(yticks[-1]*2)
-    yticks.append(yticks[0]/2)
+    if len(yticks) > 0: yticks.append(yticks[-1]*2)
+    if len(yticks) > 0: yticks.append(yticks[0]/2)
 
     ax.minorticks_off()
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xticks(domain)
     ax.set_xticklabels(list(map(lambda x: str(x), domain)))
-    ax.set_yticks(yticks)
+    if len(yticks) > 0: ax.set_yticks(yticks)
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 
     plt.title(title)

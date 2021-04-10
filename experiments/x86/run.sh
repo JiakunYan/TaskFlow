@@ -19,7 +19,7 @@ fi
 mkdir_s ./run
 
 cd run
-for i in $(eval echo {1..${1:-1}}); do
+for i in $(eval echo {1..${1:-7}}); do
   python3 ../micro_deps_run.py -p ${exe_path} | tee output.${i}.log
 done
 cd ..

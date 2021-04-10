@@ -8,6 +8,9 @@ source ../include/scripts.sh
 # get the TaskFlow source path via environment variable or default value
 TF_SOURCE_PATH=$(realpath "${TF_SOURCE_PATH:-../../}")
 ARGOBOTS_INSTALL_PATH=$(realpath "../external/argobots-1.1-install")
+export ARGOBOTS_ROOT=${ARGOBOTS_INSTALL_PATH}
+EIGEN3_INSTALL_PATH=$(realpath "../external/eigen-3.3.9-install")
+export EIGEN3_ROOT=${EIGEN3_INSTALL_PATH}
 
 if [[ -f "${TF_SOURCE_PATH}/src/tf.hpp" ]]; then
   echo "Found TaskFlow at ${TF_SOURCE_PATH}"
@@ -27,7 +30,6 @@ module load gcc
 module load cmake
 export CC=gcc
 export CXX=g++
-export ARGOBOTS_ROOT=${ARGOBOTS_INSTALL_PATH}
 
 # record build status
 record_env

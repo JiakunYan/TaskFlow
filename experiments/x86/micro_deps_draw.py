@@ -9,7 +9,7 @@ from draw_simple import *
 import json
 
 name = "micro_deps"
-input_path = "run/slurm_output.*"
+input_path = "run/output.*"
 output_path = "draw/"
 edge_data = {
     "format": "nthreads: (\d+)\s+ spinTime\(us\): (\S+)\s+ nrows: (\d+)\s+ ncols: \d+\s+ ndeps: (\d)\s+ time\(s\): \S+\s+  efficiency (\S+)",
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     }
     draw_tags(draw_config1, df=df1)
 
-    df2 = df[df.apply(lambda row: row["nthreads"] == 12 and
+    df2 = df[df.apply(lambda row: row["nthreads"] == 4 and
                                   row["spinTime"] == 10, axis=1)]
     draw_config2 = {
         "name": "micro_deps2",
