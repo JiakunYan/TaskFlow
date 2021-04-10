@@ -21,10 +21,7 @@ mkdir_s ./init
 # move to ./init directory
 cd init
 
-# setup module environment
-#module purge # module purge is broken on campus cluster
-module load gcc
-module load cmake
+# setup environment
 export CC=gcc
 export CXX=g++
 export ARGOBOTS_ROOT=${ARGOBOTS_INSTALL_PATH}

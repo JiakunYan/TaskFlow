@@ -13,12 +13,13 @@ int ndeps = 1;
 
 int main(int argc, char **argv) {
   if (argc >= 2) {
-      nthreads = atoi(argv[1]);
-      if(nthreads <= 0) { printf("Wrong argument\n"); exit(1); }
+    nthreads = atoi(argv[1]);
+    nrows = nthreads;
+    if(nthreads <= 0) { printf("Wrong argument\n"); exit(1); }
   }
   if (argc >= 3) {
-      spinTime = atof(argv[2]);
-      if(spinTime < 0) { printf("Wrong argument\n"); exit(1); }
+    spinTime = atof(argv[2]);
+    if(spinTime < 0) { printf("Wrong argument\n"); exit(1); }
   }
   if (argc >= 4) {
     nrows = atof(argv[3]);
