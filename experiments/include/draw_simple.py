@@ -60,7 +60,7 @@ def line_plot(title, xlabel, ylabel, data, fname='out.pdf', add_perfect=True, is
     ax.set_xticks(domain)
     ax.set_xticklabels(list(map(lambda x: str(x), domain)))
     if len(yticks) > 0: ax.set_yticks(yticks)
-    ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
     plt.title(title)
     plt.xlabel(xlabel)

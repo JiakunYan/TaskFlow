@@ -3,7 +3,7 @@
 # exit when any command fails
 set -e
 
-#wget https://gitlab.com/libeigen/eigen/-/archive/3.3.9/eigen-3.3.9.tar.gz
+wget https://gitlab.com/libeigen/eigen/-/archive/3.3.9/eigen-3.3.9.tar.gz
 tar xvf eigen-3.3.9.tar.gz
 mkdir -p eigen-3.3.9-build
 cd eigen-3.3.9-build

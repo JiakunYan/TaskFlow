@@ -23,7 +23,7 @@ int main() {
   // Set maximum concurrency for current work
   tf::Context context(n_threads);
 
-  // Create three taskflows to be ran
+  // Create three task classes to be ran
   tf::TaskClass<int> potf_tf;
   tf::TaskClass<int2> trsm_tf;
   tf::TaskClass<int3> gemm_tf;
