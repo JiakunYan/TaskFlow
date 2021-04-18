@@ -1,4 +1,5 @@
 #include <utility>
+#include <libcuckoo/cuckoohash_map.hh>
 
 #ifndef TASKFLOW_TASKCLASS_HPP
 #define TASKFLOW_TASKCLASS_HPP
@@ -97,6 +98,22 @@ public:
     Task* ret = nullptr;
 
     depCounterLock.lock();
+
+#ifdef LIBCUCKOO
+    int search;
+    if (depCounter.find(taskIdx, search)) {
+      int count = --search;
+      assert(count >= 0);
+      if (count == 0) {
+        depCounter.erase(taskIdx);
+        Task *p_task = makeTask(taskIdx);
+        ret = p_task;
+      }
+    } else {
+      assert(indegree > 1);
+      depCounter.insert(taskIdx, indegree - 1);
+    }
+#else
     auto search = depCounter.find(taskIdx);
     if (search == depCounter.end()) {
       assert(indegree > 1);
@@ -111,13 +128,21 @@ public:
         ret = p_task;
       }
     }
+#endif
     depCounterLock.unlock();
     return ret;
   }
 
 private:
+
+#ifdef LIBCUCKOO
+  using DepMap = libcuckoo::cuckoohash_map<TaskIdx, int>;
+#else
   using DepMap = std::unordered_map<TaskIdx, int, hash_int_N<TaskIdx>>;
+#endif
+  
   DepMap depCounter;
+
   std::mutex depCounterLock;
 
   std::function<void(TaskIdx)> task_fn;
