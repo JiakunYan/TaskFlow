@@ -98,18 +98,17 @@ public:
     }
     Task* ret = nullptr;
 
-// #ifdef LIBCUCKOO
-    std::cout << "111" << std::endl;
+ #ifdef USE_LIBCUCKOO
     bool flag;
 
     auto fn = [&](int &val) {
-      val = val--;
-      if (val == 0) {
+      if (--val == 0) {
         flag = true;
         return true;
+      } else {
+        flag = false;
+        return false;
       }
-      flag = false;
-      return false;
     };
     
     depCounter.uprase_fn(taskIdx, fn, indegree - 1);
@@ -117,35 +116,35 @@ public:
       Task *p_task = makeTask(taskIdx);
       ret = p_task;
     }
-// #else
-//     depCounterLock.lock();
-//     auto search = depCounter.find(taskIdx);
-//     if (search == depCounter.end()) {
-//       assert(indegree > 1);
-//       auto insert_ret = depCounter.insert(std::make_pair(taskIdx, indegree - 1));
-//       assert(insert_ret.second); // (taskIdx, indegree-1) was successfully inserted
-//     } else {
-//       int count = --search->second;
-//       assert(count >= 0);
-//       if (count == 0) {
-//         depCounter.erase(taskIdx);
-//         Task *p_task = makeTask(taskIdx);
-//         ret = p_task;
-//       }
-//     }
-//     depCounterLock.unlock();
-// #endif
+ #else
+     depCounterLock.lock();
+     auto search = depCounter.find(taskIdx);
+     if (search == depCounter.end()) {
+       assert(indegree > 1);
+       auto insert_ret = depCounter.insert(std::make_pair(taskIdx, indegree - 1));
+       assert(insert_ret.second); // (taskIdx, indegree-1) was successfully inserted
+     } else {
+       int count = --search->second;
+       assert(count >= 0);
+       if (count == 0) {
+         depCounter.erase(taskIdx);
+         Task *p_task = makeTask(taskIdx);
+         ret = p_task;
+       }
+     }
+     depCounterLock.unlock();
+ #endif
     
     return ret;
   }
 
 private:
 
-// #ifdef LIBCUCKOO
+ #ifdef USE_LIBCUCKOO
   using DepMap = libcuckoo::cuckoohash_map<TaskIdx, int, hash_int_N<TaskIdx>>;
-// #else
-//   using DepMap = std::unordered_map<TaskIdx, int, hash_int_N<TaskIdx>>;
-// #endif
+ #else
+   using DepMap = std::unordered_map<TaskIdx, int, hash_int_N<TaskIdx>>;
+ #endif
   
   DepMap depCounter;
 
