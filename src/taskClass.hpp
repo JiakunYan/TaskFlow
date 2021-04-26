@@ -99,11 +99,10 @@ public:
     Task* ret = nullptr;
 
 // #ifdef LIBCUCKOO
-    std::cout << "111" << std::endl;
     bool flag;
 
     auto fn = [&](int &val) {
-      val = val--;
+      --val;
       if (val == 0) {
         flag = true;
         return true;
