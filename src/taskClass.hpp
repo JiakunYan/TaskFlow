@@ -1,4 +1,5 @@
 #include <utility>
+#include <iostream>
 #include <libcuckoo/cuckoohash_map.hh>
 
 #ifndef TASKFLOW_TASKCLASS_HPP
@@ -97,49 +98,54 @@ public:
     }
     Task* ret = nullptr;
 
-    depCounterLock.lock();
+// #ifdef LIBCUCKOO
+    std::cout << "111" << std::endl;
+    bool flag;
 
-#ifdef LIBCUCKOO
-    int search;
-    if (depCounter.find(taskIdx, search)) {
-      int count = --search;
-      assert(count >= 0);
-      if (count == 0) {
-        depCounter.erase(taskIdx);
-        Task *p_task = makeTask(taskIdx);
-        ret = p_task;
+    auto fn = [&](int &val) {
+      val = val--;
+      if (val == 0) {
+        flag = true;
+        return true;
       }
-    } else {
-      assert(indegree > 1);
-      depCounter.insert(taskIdx, indegree - 1);
+      flag = false;
+      return false;
+    };
+    
+    depCounter.uprase_fn(taskIdx, fn, indegree - 1);
+    if (flag == true) {
+      Task *p_task = makeTask(taskIdx);
+      ret = p_task;
     }
-#else
-    auto search = depCounter.find(taskIdx);
-    if (search == depCounter.end()) {
-      assert(indegree > 1);
-      auto insert_ret = depCounter.insert(std::make_pair(taskIdx, indegree - 1));
-      assert(insert_ret.second); // (taskIdx, indegree-1) was successfully inserted
-    } else {
-      int count = --search->second;
-      assert(count >= 0);
-      if (count == 0) {
-        depCounter.erase(taskIdx);
-        Task *p_task = makeTask(taskIdx);
-        ret = p_task;
-      }
-    }
-#endif
-    depCounterLock.unlock();
+// #else
+//     depCounterLock.lock();
+//     auto search = depCounter.find(taskIdx);
+//     if (search == depCounter.end()) {
+//       assert(indegree > 1);
+//       auto insert_ret = depCounter.insert(std::make_pair(taskIdx, indegree - 1));
+//       assert(insert_ret.second); // (taskIdx, indegree-1) was successfully inserted
+//     } else {
+//       int count = --search->second;
+//       assert(count >= 0);
+//       if (count == 0) {
+//         depCounter.erase(taskIdx);
+//         Task *p_task = makeTask(taskIdx);
+//         ret = p_task;
+//       }
+//     }
+//     depCounterLock.unlock();
+// #endif
+    
     return ret;
   }
 
 private:
 
-#ifdef LIBCUCKOO
-  using DepMap = libcuckoo::cuckoohash_map<TaskIdx, int>;
-#else
-  using DepMap = std::unordered_map<TaskIdx, int, hash_int_N<TaskIdx>>;
-#endif
+// #ifdef LIBCUCKOO
+  using DepMap = libcuckoo::cuckoohash_map<TaskIdx, int, hash_int_N<TaskIdx>>;
+// #else
+//   using DepMap = std::unordered_map<TaskIdx, int, hash_int_N<TaskIdx>>;
+// #endif
   
   DepMap depCounter;
 
