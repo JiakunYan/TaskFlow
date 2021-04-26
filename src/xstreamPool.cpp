@@ -27,8 +27,19 @@ void XStreamPool::init() {
   int ret;
 //  ret = ABT_xstream_self(&xstreams[0]);
 //  TF_CHECK_ABT(ret);
+
+  /* Create pools. */
   for (int i = 0; i < nxstreams; i++) {
-    ret = ABT_xstream_create(ABT_SCHED_NULL, &xstreams[i]);
+    ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC, ABT_TRUE, &pools[i]);
+  }
+
+  ABT_sched *scheds = (ABT_sched*)malloc(sizeof(ABT_sched)*nxstreams);
+  for (int i = 0; i < nxstreams; i++) {
+    ABT_sched_create_basic(ABT_SCHED_PRIO, 1, &pools[i], ABT_SCHED_CONFIG_NULL, &scheds[i]);
+  }
+
+  for (int i = 0; i < nxstreams; i++) {
+    ret = ABT_xstream_create(scheds[i], &xstreams[i]);
     TF_CHECK_ABT(ret);
   }
 

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
 from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
 import pandas as pd
 import sys,os

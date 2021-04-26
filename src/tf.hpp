@@ -12,6 +12,9 @@
 
 #include "abt.h"
 
+#define AUTOMATIC 1
+#define MUST_SUCCEED 1
+
 namespace tf {
 void runTaskWrapper(void *args);
 class Context;
