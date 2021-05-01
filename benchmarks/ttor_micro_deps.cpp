@@ -1,5 +1,5 @@
 #include "bench_common.h"
-#include "tf.hpp"
+#include "tasktorrent.hpp"
 
 using namespace std;
 
@@ -35,29 +35,32 @@ int main(int argc, char **argv) {
   assert(nrows >= ndeps);
   double t0, t1;
 
-  tf::Context context(nthreads);
-  tf::TaskClass<int2> tasks;
-  tasks.setTask([&](int2 k) {
+  ttor::Threadpool_shared tp(nthreads, 0, "Wk_", false);
+  ttor::Taskflow<int2> tasks(&tp, 0);
+  tasks.set_task([&](int2 k) {
         spinForSeconds(spinTime);
       })
-      .setInDep([](int2 k) {
+      .set_indegree([](int2 k) {
         int col = k[1];
         if (col == 0) return 1;
         else return ndeps;
       })
-      .setOutDep([&](int2 k){
+      .set_fulfill([&](int2 k){
         int row = k[0];
         int col = k[1];
         if (col == ncols - 1) return;
         for (int i = 0; i < ndeps; ++i) {
-          context.signal(tasks, {(row+i) % nrows, col+1});
+          tasks.fulfill_promise({(row+i) % nrows, col+1});
         }
+      })
+      .set_mapping([&](int2 k) {
+        return (k[0] % nthreads);
       });
   t0 = getWallTime();
-  context.start();
+  tp.start();
   for (int i = 0; i < nrows; ++i)
-    context.signal(tasks, {i, 0});
-  context.join();
+    tasks.fulfill_promise({i, 0});
+  tp.join();
   t1 = getWallTime();
   double time = t1 - t0;
   double efficiency = (nrows * ncols * spinTime) / (time * nthreads);
