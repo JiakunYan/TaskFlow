@@ -35,7 +35,7 @@ void XStreamPool::init() {
 
   ABT_sched *scheds = (ABT_sched*)malloc(sizeof(ABT_sched)*nxstreams);
   for (int i = 0; i < nxstreams; i++) {
-    ABT_sched_create_basic(ABT_SCHED_PRIO, 1, &pools[i], ABT_SCHED_CONFIG_NULL, &scheds[i]);
+    ABT_sched_create_basic(ABT_SCHED_BASIC, 1, &pools[i], ABT_SCHED_CONFIG_NULL, &scheds[i]);
   }
 
   for (int i = 0; i < nxstreams; i++) {

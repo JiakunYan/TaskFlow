@@ -122,6 +122,9 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
       })
       .setName([](int j) {
         return string("POTF at ") + to_string(j);
+      })
+      .set_priority([&](int j) {
+        return block2prio({j, j});
       });
 
 
@@ -164,7 +167,10 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
       })
       .setName([](int2 ij) {
         return string("TRSM at ") + to_string(ij[0]) + "_" + to_string(ij[1]);
-      });
+      })
+      .set_priority(([&]int2 ij) {
+        return block2prio(ij);
+      };
   
 
   // Create GEMM tasks and declare dependencies
@@ -196,6 +202,9 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
       })
       .setName([](int3 ijk) {
         return string("GEMM at ") + to_string(ijk[0]) + "_" + to_string(ijk[1]) + "_" + to_string(ijk[2]);
+      })
+      .set_priority([&](int3 ijk) {
+        return block2prio({ijk[0], ijk[1]});
       });
   
   // signal the first task
