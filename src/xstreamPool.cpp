@@ -12,15 +12,26 @@ void runTaskWrapper(void *args) {
   --p_task->p_context->nTaskInFlight;
 }
 
-XStreamPool::XStreamPool(Context *context_, int nxstreams_)
-    : context(context_),
-      nxstreams(nxstreams_),
-      xstreams(nxstreams_),
-      pools(nxstreams_) {}
+// XstreamPool Constructor
+XStreamPool::XStreamPool(Context *context_, int nxstreams_) {
+  this->context = context_;
+  this->nxstreams = nxstreams_;
+  this->num_pools = (int *)calloc(nxstreams_, sizeof(int));
+  this->xstreams = (ABT_xstream *)calloc(nxstreams_, sizeof(ABT_xstream));
+  this->pools = (ABT_pool **)calloc(nxstreams_, sizeof(ABT_pool*));
+}
 
+
+// XstreamPool Destructor
 XStreamPool::~XStreamPool() {
-  xstreams.clear();
-  pools.clear();
+
+  for (int i = 0; i < nxstreams; i++) {
+    free(pools[i]);
+  }
+
+  free(num_pools);
+  free(xstreams);
+  free(pools);
 }
 
 void XStreamPool::init() {
@@ -28,14 +39,18 @@ void XStreamPool::init() {
 //  ret = ABT_xstream_self(&xstreams[0]);
 //  TF_CHECK_ABT(ret);
 
-  /* Create pools. */
+  /* Create 4 pools for each xstreams. */
   for (int i = 0; i < nxstreams; i++) {
-    ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC, ABT_TRUE, &pools[i]);
+    num_pools[i] = 4; // So there will be 4 candidate pools in each "pool"
+    pools[i] = (ABT_pool *)malloc(num_pools[i] * sizeof(ABT_pool));
+    for  (int k = 0; k < num_pools[i]; k++) {
+      ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPSC, ABT_TRUE, &pools[i][k]);
+    }
   }
 
   ABT_sched *scheds = (ABT_sched*)malloc(sizeof(ABT_sched)*nxstreams);
   for (int i = 0; i < nxstreams; i++) {
-    ABT_sched_create_basic(ABT_SCHED_BASIC, 1, &pools[i], ABT_SCHED_CONFIG_NULL, &scheds[i]);
+    ABT_sched_create_basic(ABT_SCHED_PRIO, num_pools[i], pools[i], ABT_SCHED_CONFIG_NULL, &scheds[i]);
   }
 
   for (int i = 0; i < nxstreams; i++) {
@@ -43,10 +58,11 @@ void XStreamPool::init() {
     TF_CHECK_ABT(ret);
   }
 
+  /*
   for (int i = 0; i < nxstreams; i++) {
     ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
     TF_CHECK_ABT(ret);
-  }
+  }*/
 }
 
 void XStreamPool::finalize() {
@@ -71,7 +87,8 @@ void XStreamPool::join() {
 void XStreamPool::pushReadyTask(Task *p_task) {
   static std::atomic<int64_t> i(0);
   int ret;
-  ret = ABT_task_create(pools[i++ % nxstreams], runTaskWrapper,
+  //printf("%d \n", static_cast<int>(p_task->priority));
+  ret = ABT_task_create(pools[i++ % nxstreams][static_cast<int>(p_task->priority)], runTaskWrapper,
                         p_task, nullptr);
   TF_CHECK_ABT(ret);
 }

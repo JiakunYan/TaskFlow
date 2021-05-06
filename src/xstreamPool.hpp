@@ -15,8 +15,9 @@ public:
 private:
   Context *context;
   int nxstreams;
-  std::vector<ABT_xstream> xstreams;
-  std::vector<ABT_pool> pools;
+  int* num_pools;
+  ABT_xstream* xstreams;
+  ABT_pool** pools;
 };
 } // namespace tf
 #endif // TASKFLOW_XSTREAM_POOL_HPP
