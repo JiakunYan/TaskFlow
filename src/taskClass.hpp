@@ -63,6 +63,11 @@ public:
     priority_fn = std::move(f);
     return *this;
   }
+  /**
+   * @brief set the process rank to run the task
+   * @param f the mapping from task index to rank
+   * @return reference to the taskClass object
+   */
   TaskClass &setAffinity(std::function<int(TaskIdx)> f) {
     affinity_fn = std::move(f);
     return *this;

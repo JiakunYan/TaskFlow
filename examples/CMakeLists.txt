@@ -1,6 +1,12 @@
 add_executable(hello_world hello_world.cpp)
 target_link_libraries(hello_world PRIVATE tf-lib)
 
+add_executable(hello_world_am hello_world_am.cpp)
+target_link_libraries(hello_world_am PRIVATE tf-lib)
+
+add_executable(hello_world_dist hello_world_dist.cpp)
+target_link_libraries(hello_world_dist PRIVATE tf-lib)
+
 find_package(Eigen3)
 if(EIGEN3_FOUND)
     add_executable(cholesky cholesky.cpp)

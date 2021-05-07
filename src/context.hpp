@@ -4,7 +4,7 @@
 namespace tf {
 class Context {
 public:
-  Context(int nxstreams_);
+  Context(int nxstreams_, int termSingalNum);
   ~Context();
 
   template <typename TaskIdx>
@@ -17,15 +17,31 @@ public:
     }
   }
 
+  void signalTerm() {
+    int curr = ++currTermSingalNum;
+    if (curr == totalTermSingalNum) {
+      isDone = true;
+    }
+  }
+
   void start() {
     xstreamPool.start();
   }
 
   void join() {
-    while (nTaskInFlight.load() != 0) {
-      ABT_thread_yield();
+    while (!isDone.load()) {
+      sched_yield();
     }
     xstreamPool.join();
+  }
+
+  bool tryJoin() {
+    if (isDone.load()) {
+      xstreamPool.join();
+      return true;
+    } else {
+      return false;
+    }
   }
 
   inline int rank_me() {
@@ -44,6 +60,9 @@ public:
 
 private:
   friend void runTaskWrapper(void *args);
+  int totalTermSingalNum;
+  std::atomic<int> currTermSingalNum;
+  std::atomic<bool> isDone;
   int nxstreams;
   XStreamPool xstreamPool;
   std::atomic<int64_t> nTaskInFlight;
