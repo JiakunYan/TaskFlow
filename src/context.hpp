@@ -4,7 +4,7 @@
 namespace tf {
 class Context {
 public:
-  Context(int nxstreams_, int termSingalNum);
+  Context(int nxstreams_, int termSingalNum = 0);
   ~Context();
 
   template <typename TaskIdx>
@@ -29,18 +29,20 @@ public:
   }
 
   void join() {
-    while (!isDone.load()) {
+    while ((totalTermSingalNum != 0 && !isDone.load()) ||
+           (totalTermSingalNum == 0 && nTaskInFlight != 0)) {
       sched_yield();
     }
     xstreamPool.join();
   }
 
   bool tryJoin() {
-    if (isDone.load()) {
+    if ((totalTermSingalNum != 0 && !isDone.load()) ||
+        (totalTermSingalNum == 0 && nTaskInFlight != 0)) {
+      return false;
+    } else {
       xstreamPool.join();
       return true;
-    } else {
-      return false;
     }
   }
 
