@@ -26,5 +26,7 @@ int main() {
   while (msg_recved < comm.rank_n() * nmsgs) {
     comm.progress();
   }
+  comm.drain();
+  comm.barrier();
   return 0;
 }

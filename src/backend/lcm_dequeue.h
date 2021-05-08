@@ -16,17 +16,20 @@ extern "C" {
 typedef struct {
   size_t top;
   size_t bot;
-  size_t size;
+  size_t capacity;
   void **container; // a pointer to type void*
 } LCM_dequeue_t __attribute__((aligned(64)));
 
 static inline void LCM_dq_init(LCM_dequeue_t *dq, size_t size);
 static inline void LCM_dq_finalize(LCM_dequeue_t *dq);
+static inline size_t LCM_dq_size(LCM_dequeue_t *dq);
+static inline size_t LCM_dq_capacity(LCM_dequeue_t *dq);
 static inline bool LCM_dq_is_full(LCM_dequeue_t *dq);
 static inline int LCM_dq_push_top(LCM_dequeue_t *dq, void *p);
 static inline int LCM_dq_push_bot(LCM_dequeue_t *dq, void *p);
 static inline void *LCM_dq_pop_top(LCM_dequeue_t *dq);
 static inline void *LCM_dq_pop_bot(LCM_dequeue_t *dq);
+static inline void *LCM_dq_peek_bot(LCM_dequeue_t *dq);
 
 #ifdef __cplusplus
 }
@@ -37,7 +40,7 @@ static inline void LCM_dq_init(LCM_dequeue_t* dq, size_t size)
   posix_memalign((void**) &(dq->container), 64, size * sizeof(void*));
   dq->top = 0;
   dq->bot = 0;
-  dq->size = size;
+  dq->capacity = size;
 }
 
 static inline void LCM_dq_finalize(LCM_dequeue_t* dq) {
@@ -45,14 +48,22 @@ static inline void LCM_dq_finalize(LCM_dequeue_t* dq) {
   dq->container = NULL;
 }
 
+static inline size_t LCM_dq_size(LCM_dequeue_t *dq) {
+  return (dq->top + dq->capacity - dq->bot) % dq->capacity;
+}
+
+static inline size_t LCM_dq_capacity(LCM_dequeue_t *dq) {
+  return dq->capacity - 1;
+}
+
 static inline bool LCM_dq_is_full(LCM_dequeue_t *dq) {
-  size_t new_top = (dq->top + 1) % dq->size;
+  size_t new_top = (dq->top + 1) % dq->capacity;
   return new_top == dq->bot;
 }
 
 static inline int LCM_dq_push_top(LCM_dequeue_t* dq, void* p)
 {
-  size_t new_top = (dq->top + 1) % dq->size;
+  size_t new_top = (dq->top + 1) % dq->capacity;
   if (new_top == dq->bot) {
     return LCM_RETRY;
   }
@@ -63,7 +74,7 @@ static inline int LCM_dq_push_top(LCM_dequeue_t* dq, void* p)
 
 static inline int LCM_dq_push_bot(LCM_dequeue_t* dq, void* p)
 {
-  size_t new_bot = (dq->bot + dq->size - 1) % dq->size;
+  size_t new_bot = (dq->bot + dq->capacity - 1) % dq->capacity;
   if (dq->top == new_bot) {
     return LCM_RETRY;
   }
@@ -76,7 +87,7 @@ static inline void* LCM_dq_pop_top(LCM_dequeue_t* dq)
 {
   void* ret = NULL;
   if (dq->top != dq->bot) {
-    dq->top = (dq->top + dq->size - 1) % dq->size;
+    dq->top = (dq->top + dq->capacity - 1) % dq->capacity;
     ret = dq->container[dq->top];
   }
   return ret;
@@ -87,7 +98,16 @@ static inline void* LCM_dq_pop_bot(LCM_dequeue_t* dq)
   void* ret = NULL;
   if (dq->top != dq->bot) {
     ret = dq->container[dq->bot];
-    dq->bot = (dq->bot + 1) % dq->size;
+    dq->bot = (dq->bot + 1) % dq->capacity;
+  }
+  return ret;
+};
+
+static inline void* LCM_dq_peek_bot(LCM_dequeue_t* dq)
+{
+  void* ret = NULL;
+  if (dq->top != dq->bot) {
+    ret = dq->container[dq->bot];
   }
   return ret;
 };

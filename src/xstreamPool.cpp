@@ -28,6 +28,7 @@ XStreamPool::XStreamPool(Context *context_, int nxstreams_) : isEverStarted(fals
 XStreamPool::~XStreamPool() {
   free(num_pools);
   free(xstreams);
+  free(scheds);
   free(pools);
 }
 

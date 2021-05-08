@@ -6,7 +6,6 @@ Communicator::Communicator() : p_thread(nullptr), toStop(false), isDrained(false
   TFC_init_device(&device);
   rank = TFC_rank_me(device);
   nranks = TFC_rank_n(device);
-  matchArray.resize(nranks);
 }
 Communicator::~Communicator() {
   MLOG_Assert(p_thread == nullptr, "Progress thread haven't been joined!\n");
@@ -28,39 +27,30 @@ void Communicator::progress() {
   if (ret != TFC_SUCCESS)
     return;
 
-  // process new message
-  MatchEntry &matchEntry = matchArray[entry.rank];
-  if (matchEntry.chunk_num == -1) {
-    // this is a header message
-    matchEntry.header.address = entry.buffer;
-    matchEntry.header.size = entry.size;
-    matchEntry.chunk_num = *(int*)entry.buffer;
-    matchEntry.am_id = entry.imm_data;
-  } else {
-    // this is a chunk message
-    assert(entry.imm_data == matchEntry.am_id);
-    matchEntry.chunks.push_back({entry.buffer, entry.size});
-  }
-  if (matchEntry.chunks.size() < matchEntry.chunk_num) {
-    // wait for more chunk messages
-    return;
-  }
-  MLOG_Log(MLOG_LOG_TRACE, "recv header size: %ld B\n", matchEntry.header.size);
-  MLOG_Log(MLOG_LOG_TRACE, "recv chunk num: %d\n", matchEntry.chunk_num);
-  for (int i = 0; i < matchEntry.chunks.size(); ++i)
-    MLOG_Log(MLOG_LOG_TRACE, "recv chunk[%d] size: %ld B\n", i, matchEntry.chunks[i].size);
+  // we get an AM
+  MLOG_Log(MLOG_LOG_TRACE, "recv header size: %ld B\n", entry.header.size);
+  MLOG_Log(MLOG_LOG_TRACE, "recv chunk num: %d\n", entry.chunk_num);
+  for (int i = 0; i < entry.chunk_num; ++i)
+    MLOG_Log(MLOG_LOG_TRACE, "recv chunk[%d] size: %ld B\n", i, entry.chunks[i].size);
   // process new active message
-  assert(matchEntry.am_id < activeMsgs.size());
-  ActiveMsg &activeMsg = activeMsgs[matchEntry.am_id];
-  activeMsg.run(matchEntry.header, matchEntry.chunks);
+  assert(entry.imm_data < activeMsgs.size());
+  ActiveMsg &activeMsg = activeMsgs[entry.imm_data];
+  buffer_t header;
+  header.address = entry.header.address;
+  header.size = entry.header.size;
+  std::vector<buffer_t> chunks;
+  for (int i = 0; i < entry.chunk_num; ++i) {
+    chunks.push_back({entry.chunks[i].address, entry.chunks[i].size});
+  }
+  if (entry.chunk_num > 0)
+    free(entry.chunks);
+  activeMsg.run(header, chunks);
 
   // release resource
-  TFC_free(device, matchEntry.header.address);
-  for (auto &chunk : matchEntry.chunks) {
+  TFC_free(device, header.address);
+  for (auto &chunk : chunks) {
     TFC_free(device, chunk.address);
   }
-  matchEntry.chunk_num = -1;
-  matchEntry.chunks.clear();
 }
 
 void Communicator::drain() {

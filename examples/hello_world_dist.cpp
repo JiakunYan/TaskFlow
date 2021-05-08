@@ -10,7 +10,7 @@ const int n = 10;
 const int ndeps = 3;
 
 int main() {
-  tf::Context context(3, m);
+  tf::Context context(3);
   // define tasks
   tf::TaskClass<int2> helloWorld;
 
@@ -55,7 +55,7 @@ int main() {
     context.signal(helloWorld, {i * comm.rank_n() + comm.rank_me(), 0});
 
   // execute tasks
-  context.start();
+  context.start(m);
   while (!context.tryJoin())
     comm.progress();
   comm.drain();

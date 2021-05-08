@@ -24,22 +24,24 @@ struct ActiveMsgIdx {
     for (int i = 0; i < s.chunks.size(); ++i)
       MLOG_Log(MLOG_LOG_TRACE, "send chunk[%d] size: %ld B\n", i, s.chunks[i].size);
     TFC_error_t ret;
-    do {
-      ret = TFC_stream_push(device, rank, s.header.address, s.header.size, id);
-    } while (ret != TFC_SUCCESS);
-    for (auto &chunk : s.chunks) {
-      do {
-        ret = TFC_stream_push(device, rank, chunk.address, chunk.size, id);
-      } while (ret != TFC_SUCCESS);
+    TFC_entry_t entry;
+    entry.rank = rank;
+    entry.imm_data = id;
+    entry.header.address = s.header.address;
+    entry.header.size = s.header.size;
+    entry.chunk_num = s.chunks.size();
+    if (entry.chunk_num > 0) {
+      entry.chunks =
+          (TFC_buffer_t *)malloc(sizeof(TFC_buffer_t) * entry.chunk_num);
+      for (int i = 0; i < s.chunks.size(); ++i) {
+        entry.chunks[i].address = s.chunks[i].address;
+        entry.chunks[i].size = s.chunks[i].size;
+      }
     }
+    do {
+      ret = TFC_stream_push(device, entry);
+    } while (ret != TFC_SUCCESS);
   }
-};
-
-struct MatchEntry {
-  int am_id;
-  int chunk_num = -1;
-  buffer_t header;
-  std::vector<buffer_t> chunks;
 };
 
 class Communicator {
@@ -49,7 +51,6 @@ private:
   int nranks;
   bool isDrained;
   std::vector<ActiveMsg> activeMsgs;
-  std::vector<MatchEntry> matchArray;
   volatile bool toStop;
   std::thread *p_thread;
 public:
