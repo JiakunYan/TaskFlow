@@ -67,6 +67,28 @@ void cholesky(int n_threads, int n, int N, int p, int q)
     return r;
   };
 
+  // Gives the priority
+  auto block2prio = [&](int2 ij) {
+    int i = ij[0]+1;
+    int j = ij[1]+1;
+    assert(i >= j);
+
+    double current_prio = static_cast<double>(N*N - ((i*(i-1))/2 + j));
+
+    int priority = 0;
+    if (current_prio < 0.1 * N * N) {
+      priority = 0;
+    } else if (current_prio < 0.3 * N * N) {
+      priority = 1;
+    } else if (current_prio > 0.5 * N * N) {
+      priority = 2;
+    } else {
+      priority = 3;
+    }
+
+    return priority;
+  };
+
   // Block the matrix for every node
   // Store it in a map
   // Later on we can probably optimize this, to avoid storing the whole thing
@@ -153,6 +175,9 @@ void cholesky(int n_threads, int n, int N, int p, int q)
               am_trsm.send(r, Ljjv, j, isv);
             }
           }
+        })
+        .setPriority([&](int j) {
+          return block2prio({j, j});
         });
 
     // trsm
@@ -207,6 +232,9 @@ void cholesky(int n_threads, int n, int N, int p, int q)
               am_gemm.send(r, Lijv, i, j, ijsv);
             }
           }
+        })
+        .setPriority([&](int2 ij) {
+          return block2prio(ij);
         });
 
     // gemm
@@ -240,6 +268,9 @@ void cholesky(int n_threads, int n, int N, int p, int q)
           {
             context.signal(gemm_tf, {i, j, k+1});
           }
+        })
+        .setPriority([&](int3 ijk) {
+          return block2prio({ijk[0], ijk[1]});
         });
 
     MPI_Barrier(MPI_COMM_WORLD);

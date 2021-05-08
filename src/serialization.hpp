@@ -101,9 +101,10 @@ private:
         }
         template <typename T>
         void operator()(view<T> &t) {
-          int view_size = sizeof(T) * t.size();
+          int64_t view_num = t.size();
+          int64_t view_size = sizeof(T) * view_num;
           assert(cpos + sizeof(int64_t) <= serializer.header.size);
-          memcpy((char*)serializer.header.address + cpos, &t.size(), sizeof(int64_t));
+          memcpy((char*)serializer.header.address + cpos, &view_num, sizeof(int64_t));
           cpos += sizeof(int64_t);
           if (view_size < TF_LARGE_MESSAGE_THRESHOLD) {
             assert(cpos + view_size <= serializer.header.size);
@@ -145,12 +146,12 @@ private:
             cpos += sizeof(int64_t);
             if (view_size < TF_LARGE_MESSAGE_THRESHOLD) {
               assert(cpos + view_size <= serializer.header.size);
-              t = view<T>((char*)serializer.header.address + cpos, view_num);
+              t = view<T>((T*)((char*)serializer.header.address + cpos), view_num);
               cpos += view_size;
             } else {
               const buffer_t &chunk = serializer.chunks[chunk_idx++];
               assert(chunk.size == view_size);
-              t = view<T>(chunk.address, view_num);
+              t = view<T>((T*)chunk.address, view_num);
             }
         }
     };

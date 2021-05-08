@@ -13,22 +13,18 @@ void runTaskWrapper(void *args) {
 }
 
 // XstreamPool Constructor
-XStreamPool::XStreamPool(Context *context_, int nxstreams_) {
+XStreamPool::XStreamPool(Context *context_, int nxstreams_) : isEverStarted(false) {
   this->context = context_;
   this->nxstreams = nxstreams_;
   this->num_pools = (int *)calloc(nxstreams_, sizeof(int));
   this->xstreams = (ABT_xstream *)calloc(nxstreams_, sizeof(ABT_xstream));
+  this->scheds = (ABT_sched *)calloc(nxstreams_, sizeof(ABT_sched));
   this->pools = (ABT_pool **)calloc(nxstreams_, sizeof(ABT_pool*));
 }
 
 
 // XstreamPool Destructor
 XStreamPool::~XStreamPool() {
-
-  for (int i = 0; i < nxstreams; i++) {
-    free(pools[i]);
-  }
-
   free(num_pools);
   free(xstreams);
   free(pools);
@@ -48,21 +44,9 @@ void XStreamPool::init() {
     }
   }
 
-  ABT_sched *scheds = (ABT_sched*)malloc(sizeof(ABT_sched)*nxstreams);
   for (int i = 0; i < nxstreams; i++) {
     ABT_sched_create_basic(ABT_SCHED_PRIO, num_pools[i], pools[i], ABT_SCHED_CONFIG_NULL, &scheds[i]);
   }
-
-  for (int i = 0; i < nxstreams; i++) {
-    ret = ABT_xstream_create(scheds[i], &xstreams[i]);
-    TF_CHECK_ABT(ret);
-  }
-
-  /*
-  for (int i = 0; i < nxstreams; i++) {
-    ret = ABT_xstream_get_main_pools(xstreams[i], 1, &pools[i]);
-    TF_CHECK_ABT(ret);
-  }*/
 }
 
 void XStreamPool::finalize() {
@@ -71,9 +55,26 @@ void XStreamPool::finalize() {
     ret = ABT_xstream_free(&xstreams[i]);
     TF_CHECK_ABT(ret);
   }
+  for (int i = 0; i < nxstreams; i++) {
+    if (pools[i])
+      free(pools[i]);
+  }
 }
 
 void XStreamPool::start() {
+  int ret;
+  if (!isEverStarted) {
+    for (int i = 0; i < nxstreams; i++) {
+      ret = ABT_xstream_create(scheds[i], &xstreams[i]);
+      TF_CHECK_ABT(ret);
+    }
+    isEverStarted = true;
+  } else {
+    for (int i = 0; i < nxstreams; i++) {
+      ret = ABT_xstream_revive(xstreams[i]);
+      TF_CHECK_ABT(ret);
+    }
+  }
 }
 
 void XStreamPool::join() {
