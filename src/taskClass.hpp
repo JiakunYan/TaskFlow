@@ -1,4 +1,6 @@
 #include <utility>
+#include <iostream>
+#include <libcuckoo/cuckoohash_map.hh>
 
 #ifndef TASKFLOW_TASKCLASS_HPP
 #define TASKFLOW_TASKCLASS_HPP
@@ -103,6 +105,29 @@ public:
     }
     Task* ret = nullptr;
 
+ #ifdef TF_USE_LIBCUCKOO
+    bool flag;
+
+    auto fn = [&](int &val) {
+      if (--val == 0) {
+        flag = true;
+        return true;
+      } else {
+        flag = false;
+        return false;
+      }
+    };
+    
+    bool isNewKey = depCounter.uprase_fn(taskIdx, fn, indegree - 1);
+    if (isNewKey) {
+      // a new key is inserted
+      ++nTaskInFlight;
+    }
+    if (flag == true) {
+      Task *p_task = makeTask(taskIdx);
+      ret = p_task;
+    }
+ #else
     depCounterLock.lock();
     auto search = depCounter.find(taskIdx);
     if (search == depCounter.end()) {
@@ -119,15 +144,24 @@ public:
         depCounter.erase(taskIdx);
         Task *p_task = makeTask(taskIdx);
         ret = p_task;
-      }
-    }
-    depCounterLock.unlock();
+       }
+     }
+     depCounterLock.unlock();
+ #endif
+    
     return ret;
   }
 
 private:
-  using DepMap = std::unordered_map<TaskIdx, int, hash_int_N<TaskIdx>>;
+
+ #ifdef TF_USE_LIBCUCKOO
+   using DepMap = libcuckoo::cuckoohash_map<TaskIdx, int, hash_int_N<TaskIdx>>;
+ #else
+   using DepMap = std::unordered_map<TaskIdx, int, hash_int_N<TaskIdx>>;
+ #endif
+  
   DepMap depCounter;
+
   std::mutex depCounterLock;
 
   std::function<void(TaskIdx)> task_fn;

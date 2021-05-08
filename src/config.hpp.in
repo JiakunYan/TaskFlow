@@ -13,5 +13,6 @@
 
 #define TF_LARGE_MESSAGE_THRESHOLD 8192
 #define TFC_USE_MPI
+#cmakedefine TF_USE_LIBCUCKOO
 
 #endif // TASKFLOW_CONFIG_HPP
