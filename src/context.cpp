@@ -1,11 +1,10 @@
 #include "tf.hpp"
 
 namespace tf {
-Context::Context(int nxstreams_, int termSingalNum)
+Context::Context(int nxstreams_)
     : nTaskInFlight(0),
       isDone(false),
       currTermSingalNum(0),
-      totalTermSingalNum(termSingalNum),
       nxstreams(nxstreams_),
       xstreamPool(this, nxstreams_) {
   int ret;

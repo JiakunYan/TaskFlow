@@ -10,6 +10,7 @@ void runTaskWrapper(void *args) {
   auto p_task = static_cast<Task*>(args);
   p_task->run();
   --p_task->p_context->nTaskInFlight;
+  MLOG_Log(MLOG_LOG_TRACE, "%s is done!\n", p_task->name.c_str());
 }
 
 // XstreamPool Constructor
@@ -88,7 +89,6 @@ void XStreamPool::join() {
 void XStreamPool::pushReadyTask(Task *p_task) {
   static std::atomic<int64_t> i(0);
   int ret;
-  //printf("%d \n", static_cast<int>(p_task->priority));
   ret = ABT_task_create(pools[i++ % nxstreams][static_cast<int>(p_task->priority)], runTaskWrapper,
                         p_task, nullptr);
   TF_CHECK_ABT(ret);

@@ -67,8 +67,8 @@ static inline int LCM_dq_push_bot(LCM_dequeue_t* dq, void* p)
   if (dq->top == new_bot) {
     return LCM_RETRY;
   }
-  dq->container[dq->bot] = p;
   dq->bot = new_bot;
+  dq->container[dq->bot] = p;
   return LCM_SUCCESS;
 };
 

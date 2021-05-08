@@ -19,6 +19,10 @@ struct ActiveMsgIdx {
       chunk.address = TFC_malloc(device, chunk.size);
     }
     s.write(std::forward<Args>(args)...);
+    MLOG_Log(MLOG_LOG_TRACE, "send header size: %ld B\n", s.header.size);
+    MLOG_Log(MLOG_LOG_TRACE, "send chunk num: %lu\n", s.chunks.size());
+    for (int i = 0; i < s.chunks.size(); ++i)
+      MLOG_Log(MLOG_LOG_TRACE, "send chunk[%d] size: %ld B\n", i, s.chunks[i].size);
     TFC_error_t ret;
     do {
       ret = TFC_stream_push(device, rank, s.header.address, s.header.size, id);

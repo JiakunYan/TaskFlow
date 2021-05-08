@@ -4,27 +4,28 @@
 namespace tf {
 class Context {
 public:
-  Context(int nxstreams_, int termSingalNum = 0);
+  Context(int nxstreams_);
   ~Context();
 
   template <typename TaskIdx>
   void signal(TaskClass<TaskIdx>& taskClass, TaskIdx taskIdx) {
-    Task *p_task = taskClass.signal(taskIdx);
+    Task *p_task = taskClass.signal(taskIdx, nTaskInFlight);
     if (p_task != nullptr) {
       p_task->p_context = this;
-      ++nTaskInFlight;
       xstreamPool.pushReadyTask(p_task);
     }
   }
 
   void signalTerm() {
     int curr = ++currTermSingalNum;
+    MLOG_Log(MLOG_LOG_TRACE, "signalTerm %d/%d\n", curr, totalTermSingalNum);
     if (curr == totalTermSingalNum) {
       isDone = true;
     }
   }
 
-  void start() {
+  void start(int termSingalNum = 0) {
+    totalTermSingalNum = termSingalNum;
     xstreamPool.start();
   }
 

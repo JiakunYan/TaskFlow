@@ -93,9 +93,11 @@ public:
     return t;
   }
 
-  Task* signal(TaskIdx taskIdx) {
+  Task* signal(TaskIdx taskIdx, std::atomic<int64_t> &nTaskInFlight) {
     int indegree = indep_fn(taskIdx);
     if (indegree == 1) {
+      MLOG_Log(MLOG_LOG_TRACE, "signal %s inDep 1/1\n", name_fn(taskIdx).c_str());
+      ++nTaskInFlight;
       Task *p_task = makeTask(taskIdx);
       return p_task;
     }
@@ -105,10 +107,13 @@ public:
     auto search = depCounter.find(taskIdx);
     if (search == depCounter.end()) {
       assert(indegree > 1);
+      ++nTaskInFlight;
       auto insert_ret = depCounter.insert(std::make_pair(taskIdx, indegree - 1));
       assert(insert_ret.second); // (taskIdx, indegree-1) was successfully inserted
+      MLOG_Log(MLOG_LOG_TRACE, "signal %s inDep 1/%d\n", name_fn(taskIdx).c_str(), indegree);
     } else {
       int count = --search->second;
+      MLOG_Log(MLOG_LOG_TRACE, "signal %s inDep %d/%d\n", name_fn(taskIdx).c_str(), indegree - count, indegree);
       assert(count >= 0);
       if (count == 0) {
         depCounter.erase(taskIdx);

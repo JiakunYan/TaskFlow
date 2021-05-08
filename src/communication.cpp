@@ -38,13 +38,17 @@ void Communicator::progress() {
     matchEntry.am_id = entry.imm_data;
   } else {
     // this is a chunk message
+    assert(entry.imm_data == matchEntry.am_id);
     matchEntry.chunks.push_back({entry.buffer, entry.size});
   }
   if (matchEntry.chunks.size() < matchEntry.chunk_num) {
     // wait for more chunk messages
     return;
   }
-
+  MLOG_Log(MLOG_LOG_TRACE, "recv header size: %ld B\n", matchEntry.header.size);
+  MLOG_Log(MLOG_LOG_TRACE, "recv chunk num: %d\n", matchEntry.chunk_num);
+  for (int i = 0; i < matchEntry.chunks.size(); ++i)
+    MLOG_Log(MLOG_LOG_TRACE, "recv chunk[%d] size: %ld B\n", i, matchEntry.chunks[i].size);
   // process new active message
   assert(matchEntry.am_id < activeMsgs.size());
   ActiveMsg &activeMsg = activeMsgs[matchEntry.am_id];

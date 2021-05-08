@@ -179,7 +179,13 @@ static inline TFC_error_t TFC_stream_poll(TFC_device_t device, TFC_entry_t *entr
   }
 }
 static void TFC_barrier(TFC_device_t device) {
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Request request;
+  MPI_Ibarrier(MPI_COMM_WORLD, &request);
+  int flag;
+  do {
+    MPI_Test(&request, &flag, MPI_STATUS_IGNORE);
+    TFC_progress_push(device);
+  } while (!flag);
 }
 
 

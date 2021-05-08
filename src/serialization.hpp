@@ -150,7 +150,7 @@ private:
               cpos += view_size;
             } else {
               const buffer_t &chunk = serializer.chunks[chunk_idx++];
-              assert(chunk.size == view_size);
+              MLOG_Assert(chunk.size == view_size, "%ld != %ld", chunk.size, view_size);
               t = view<T>((T*)chunk.address, view_num);
             }
         }
@@ -178,14 +178,24 @@ public:
     }
 };
 
-//template <>
-//class Serializer<>
-//{
-//public:
-//    size_t size() { return 0; };
-//    void write(char *){};
-//    std::tuple<> read(char *) { return {}; };
-//};
+template <>
+class Serializer<>
+{
+public:
+  buffer_t header;
+  std::vector<buffer_t> chunks;
+  void set_size() {
+      // empty message, we only need to send one int function for chunk_num
+      header.size = 4;
+      chunks.clear();
+  };
+  void write() {
+      *(int*) header.address = 0;
+  };
+  std::tuple<> read() {
+    return {};
+  };
+};
 
 } // namespace tf
 
