@@ -15,4 +15,8 @@
 #define TFC_USE_MPI
 #cmakedefine TF_USE_LIBCUCKOO
 
+#ifndef NDEBUG
+#define MLOG_DEBUG
+#endif
+
 #endif // TASKFLOW_CONFIG_HPP

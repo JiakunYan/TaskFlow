@@ -12,7 +12,7 @@ const int ncols = 100;
 int main() {
   tf::Context context(1);
   tf::Communicator comm;
-  assert(comm.rank_n() == 2);
+  MLOG_Assert(comm.rank_n() == 2, "need exactly 2 processes\n");
 
   MatrixXd m;
   volatile bool flag = false;

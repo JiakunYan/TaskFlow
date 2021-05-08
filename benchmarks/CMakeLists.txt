@@ -1,14 +1,31 @@
+function(add_ttor_executable EXEC)
+    add_executable(${EXEC} ${ARGN})
+    target_link_libraries(${EXEC} PRIVATE
+            TaskTorrent::TaskTorrent
+            Threads::Threads)
+    target_compile_definitions(${EXEC} PRIVATE TTOR_MPI)
+    target_include_directories(${EXEC} PRIVATE ${MPI_CXX_INCLUDE_PATH})
+    target_compile_options(${EXEC} PRIVATE ${MPI_CXX_COMPILE_FLAGS})
+    target_link_libraries(${EXEC} PRIVATE ${MPI_CXX_LIBRARIES} ${MPI_CXX_LINK_FLAGS})
+endfunction()
+
 add_executable(micro_deps micro_deps.cpp)
 target_link_libraries(micro_deps PRIVATE tf-lib)
+
+find_package(MPI REQUIRED)
+find_package(Eigen3 REQUIRED)
+if(EIGEN3_FOUND)
+    add_executable(cholesky_dist ../benchmarks/cholesky_dist.cpp)
+    target_link_libraries(cholesky_dist PRIVATE tf-lib)
+    target_include_directories(cholesky_dist PRIVATE ${EIGEN3_INCLUDE_DIR})
+endif()
 
 find_package(TaskTorrent)
 if (TaskTorrent_FOUND)
     find_package(Threads REQUIRED)
-    add_executable(ttor_micro_deps ttor_micro_deps.cpp)
-    target_link_libraries(ttor_micro_deps PRIVATE
-            TaskTorrent::TaskTorrent
-            Threads::Threads)
-    target_compile_definitions(ttor_micro_deps PRIVATE TTOR_SHARED)
+    add_ttor_executable(ttor_micro_deps ttor_micro_deps.cpp)
+    add_ttor_executable(ttor_cholesky ttor_cholesky.cpp)
+    target_include_directories(ttor_cholesky PRIVATE ${EIGEN3_INCLUDE_DIR})
 endif()
 
 find_package(PaRSEC HINTS

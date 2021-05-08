@@ -37,7 +37,8 @@ static inline void *LCM_dq_peek_bot(LCM_dequeue_t *dq);
 
 static inline void LCM_dq_init(LCM_dequeue_t* dq, size_t size)
 {
-  posix_memalign((void**) &(dq->container), 64, size * sizeof(void*));
+  int ret = posix_memalign((void**) &(dq->container), 64, size * sizeof(void*));
+  assert(ret == 0);
   dq->top = 0;
   dq->bot = 0;
   dq->capacity = size;

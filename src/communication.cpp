@@ -28,10 +28,10 @@ void Communicator::progress() {
     return;
 
   // we get an AM
-  MLOG_Log(MLOG_LOG_TRACE, "recv header size: %ld B\n", entry.header.size);
-  MLOG_Log(MLOG_LOG_TRACE, "recv chunk num: %d\n", entry.chunk_num);
+  MLOG_DBG_Log(MLOG_LOG_TRACE, "recv header size: %ld B\n", entry.header.size);
+  MLOG_DBG_Log(MLOG_LOG_TRACE, "recv chunk num: %d\n", entry.chunk_num);
   for (int i = 0; i < entry.chunk_num; ++i)
-    MLOG_Log(MLOG_LOG_TRACE, "recv chunk[%d] size: %ld B\n", i, entry.chunks[i].size);
+    MLOG_DBG_Log(MLOG_LOG_TRACE, "recv chunk[%d] size: %ld B\n", i, entry.chunks[i].size);
   // process new active message
   assert(entry.imm_data < activeMsgs.size());
   ActiveMsg &activeMsg = activeMsgs[entry.imm_data];

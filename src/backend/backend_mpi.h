@@ -44,7 +44,8 @@ static void TFC_finalize() {
 
 static void TFC_init_device(TFC_device_t *device) {
   TFCI_device_t *p_device;
-  posix_memalign((void **) &p_device, 64, sizeof(TFCI_device_t));
+  int ret = posix_memalign((void **) &p_device, 64, sizeof(TFCI_device_t));
+  assert(ret == 0);
   pthread_spin_init(&p_device->request_sq_lock, PTHREAD_PROCESS_PRIVATE);
   LCM_dq_init(&p_device->request_sq, TFC_MAX_PENDING_MSG);
   LCM_dq_init(&p_device->pending_sq, TFC_MAX_PENDING_MSG);

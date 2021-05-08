@@ -12,10 +12,6 @@ if(EIGEN3_FOUND)
     add_executable(cholesky cholesky.cpp)
     target_link_libraries(cholesky PRIVATE tf-lib)
     target_include_directories(cholesky PRIVATE ${EIGEN3_INCLUDE_DIR})
-
-    add_executable(cholesky_dist cholesky_dist.cpp)
-    target_link_libraries(cholesky_dist PRIVATE tf-lib)
-    target_include_directories(cholesky_dist PRIVATE ${EIGEN3_INCLUDE_DIR})
 endif()
 
 add_executable(qr_gram-schmidt qr_gram-schmidt.cpp)

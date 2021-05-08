@@ -10,7 +10,7 @@ void runTaskWrapper(void *args) {
   auto p_task = static_cast<Task*>(args);
   p_task->run();
   --p_task->p_context->nTaskInFlight;
-  MLOG_Log(MLOG_LOG_TRACE, "%s is done!\n", p_task->name.c_str());
+  MLOG_DBG_Log(MLOG_LOG_TRACE, "%s is done!\n", p_task->name.c_str());
 }
 
 // XstreamPool Constructor

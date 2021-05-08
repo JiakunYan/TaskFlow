@@ -95,21 +95,23 @@ public:
     return t;
   }
 
-  Task* signal(TaskIdx taskIdx, std::atomic<int64_t> &nTaskInFlight) {
+  Task* signal(TaskIdx taskIdx) {
     int indegree = indep_fn(taskIdx);
     if (indegree == 1) {
-      MLOG_Log(MLOG_LOG_TRACE, "signal %s inDep 1/1\n", name_fn(taskIdx).c_str());
-      ++nTaskInFlight;
+      MLOG_DBG_Log(MLOG_LOG_TRACE, "signal %s inDep 1/1\n", name_fn(taskIdx).c_str());
+//      ++nTaskInFlight;
       Task *p_task = makeTask(taskIdx);
       return p_task;
     }
     Task* ret = nullptr;
 
  #ifdef TF_USE_LIBCUCKOO
-    bool flag;
+    bool flag = false;
 
     auto fn = [&](int &val) {
-      if (--val == 0) {
+      --val;
+      MLOG_DBG_Log(MLOG_LOG_TRACE, "signal %s inDep %d/%d\n", name_fn(taskIdx).c_str(), indegree - val, indegree);
+      if (val == 0) {
         flag = true;
         return true;
       } else {
@@ -121,7 +123,8 @@ public:
     bool isNewKey = depCounter.uprase_fn(taskIdx, fn, indegree - 1);
     if (isNewKey) {
       // a new key is inserted
-      ++nTaskInFlight;
+//      ++nTaskInFlight;
+      MLOG_DBG_Log(MLOG_LOG_TRACE, "signal %s inDep 1/%d\n", name_fn(taskIdx).c_str(), indegree);
     }
     if (flag == true) {
       Task *p_task = makeTask(taskIdx);
@@ -132,13 +135,13 @@ public:
     auto search = depCounter.find(taskIdx);
     if (search == depCounter.end()) {
       assert(indegree > 1);
-      ++nTaskInFlight;
+//      ++nTaskInFlight;
       auto insert_ret = depCounter.insert(std::make_pair(taskIdx, indegree - 1));
       assert(insert_ret.second); // (taskIdx, indegree-1) was successfully inserted
-      MLOG_Log(MLOG_LOG_TRACE, "signal %s inDep 1/%d\n", name_fn(taskIdx).c_str(), indegree);
+      MLOG_DBG_Log(MLOG_LOG_TRACE, "signal %s inDep 1/%d\n", name_fn(taskIdx).c_str(), indegree);
     } else {
       int count = --search->second;
-      MLOG_Log(MLOG_LOG_TRACE, "signal %s inDep %d/%d\n", name_fn(taskIdx).c_str(), indegree - count, indegree);
+      MLOG_DBG_Log(MLOG_LOG_TRACE, "signal %s inDep %d/%d\n", name_fn(taskIdx).c_str(), indegree - count, indegree);
       assert(count >= 0);
       if (count == 0) {
         depCounter.erase(taskIdx);

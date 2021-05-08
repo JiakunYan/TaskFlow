@@ -9,16 +9,17 @@ public:
 
   template <typename TaskIdx>
   void signal(TaskClass<TaskIdx>& taskClass, TaskIdx taskIdx) {
-    Task *p_task = taskClass.signal(taskIdx, nTaskInFlight);
+    Task *p_task = taskClass.signal(taskIdx);
     if (p_task != nullptr) {
       p_task->p_context = this;
+      ++nTaskInFlight;
       xstreamPool.pushReadyTask(p_task);
     }
   }
 
   void signalTerm() {
     int curr = ++currTermSingalNum;
-    MLOG_Log(MLOG_LOG_TRACE, "signalTerm %d/%d\n", curr, totalTermSingalNum);
+    MLOG_DBG_Log(MLOG_LOG_TRACE, "signalTerm %d/%d\n", curr, totalTermSingalNum);
     if (curr == totalTermSingalNum) {
       isDone = true;
     }

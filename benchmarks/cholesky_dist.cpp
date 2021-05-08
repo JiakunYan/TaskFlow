@@ -18,9 +18,9 @@ typedef array<int, 2> int2;
 typedef array<int, 3> int3;
 
 int VERB = 0;
-int n_threads_ = 3;
-int n_ = 10;
-int N_ = 5;
+int n_threads_ = 4;
+int n_ = 128;
+int N_ = 32;
 int p_ = 1;
 int q_ = 1;
 
@@ -178,16 +178,16 @@ void cholesky(int n_threads, int n, int N, int p, int q)
             for (auto &p : to_fulfill) {
               int r = p.first;
               // Task is local. Just fulfill.
-//              if (r == rank) {
-//                for (auto &i : p.second) {
-//                  context.signal(trsm_tf, {i, j});
-//                }
-//                // Task is remote. Send data and fulfill.
-//              } else {
+              if (r == rank) {
+                for (auto &i : p.second) {
+                  context.signal(trsm_tf, {i, j});
+                }
+                // Task is remote. Send data and fulfill.
+              } else {
                 auto Ljjv = view<double>(Mat.at({j, j}).data(), n * n);
                 auto isv = view<int>(p.second.data(), p.second.size());
                 am_trsm.send(r, Ljjv, j, isv);
-//              }
+              }
             }
           }
         })
@@ -236,19 +236,19 @@ void cholesky(int n_threads, int n, int N, int p, int q)
           for(auto& p: to_fulfill) {
             int r = p.first;
             // Task is local. Just fulfill.
-//            if(r == rank) {
-//              for(auto& ij: p.second) {
-//                int gi = ij[0];
-//                int gj = ij[1];
-//                int gk = j;
-//                context.signal(gemm_tf, {gi,gj,gk});
-//              }
-//              // Task is remote. Send data and fulfill.
-//            } else {
+            if(r == rank) {
+              for(auto& ij: p.second) {
+                int gi = ij[0];
+                int gj = ij[1];
+                int gk = j;
+                context.signal(gemm_tf, {gi,gj,gk});
+              }
+              // Task is remote. Send data and fulfill.
+            } else {
               auto Lijv = view<double>(Mat.at({i,j}).data(), n*n);
               auto ijsv = view<int2>(p.second.data(), p.second.size());
               am_gemm.send(r, Lijv, i, j, ijsv);
-//            }
+            }
           }
         })
         .setName([](int2 ij) {
