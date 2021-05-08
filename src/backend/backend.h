@@ -31,7 +31,9 @@ static inline int TFC_rank_n(TFC_device_t device);
 static inline void* TFC_malloc(TFC_device_t device, int64_t size);
 static inline void TFC_free(TFC_device_t device, void *buffer);
 static inline TFC_error_t TFC_stream_push(TFC_device_t device, int rank, void *buffer, int64_t size, imm_data_t imm_data);
+static inline bool TFC_progress_push(TFC_device_t device);
 static inline TFC_error_t TFC_stream_pop(TFC_device_t device, TFC_entry_t *entry);
+static void TFC_barrier(TFC_device_t device);
 
 #ifdef TFC_USE_MPI
 #include "backend_mpi.h"

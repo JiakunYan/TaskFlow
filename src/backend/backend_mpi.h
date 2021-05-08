@@ -85,13 +85,17 @@ static inline TFC_error_t TFC_stream_push(TFC_device_t device, int rank, void *b
   else
     return TFC_RETRY;
 }
-static inline TFC_error_t TFC_stream_poll(TFC_device_t device, TFC_entry_t *entry) {
-  assert(entry != NULL);
-  // poll send queue, issue Isend
+static inline bool TFC_progress_push(TFC_device_t device) {
+  bool isRequestSQEmpty = false;
   TFCI_device_t *p_device = (TFCI_device_t *)device;
   while (!LCM_dq_is_full(&p_device->pending_sq)) {
+    pthread_spin_lock(&p_device->request_sq_lock);
     TFCI_send_request_t *p_request = (TFCI_send_request_t *) LCM_dq_pop_bot(&p_device->request_sq);
-    if (p_request == NULL) break;
+    pthread_spin_unlock(&p_device->request_sq_lock);
+    if (p_request == NULL) {
+      isRequestSQEmpty = true;
+      break;
+    }
     // send the message
     TFCI_pending_request_t *p_pending = (TFCI_pending_request_t*) malloc(sizeof(TFCI_pending_request_t));
     p_pending->buffer = p_request->buffer;
@@ -104,15 +108,30 @@ static inline TFC_error_t TFC_stream_poll(TFC_device_t device, TFC_entry_t *entr
   }
 
   // check for completed Isend
+  bool isPendingSQEmpty = false;
   while (true) {
     TFCI_pending_request_t *p_pending = (TFCI_pending_request_t *) LCM_dq_pop_bot(&p_device->pending_sq);
-    if (p_pending == NULL) break;
+    if (p_pending == NULL) {
+      isPendingSQEmpty = true;
+      break;
+    }
     int flag;
     MPI_Test(&p_pending->request, &flag, MPI_STATUS_IGNORE);
-    if (!flag) break;
+    if (!flag) {
+      int ret = LCM_dq_push_bot(&p_device->pending_sq, p_pending);
+      assert(ret == LCM_SUCCESS);
+      break;
+    }
     TFC_free(device, p_pending->buffer);
     free(p_pending);
   }
+  return isRequestSQEmpty && isPendingSQEmpty;
+}
+static inline TFC_error_t TFC_stream_poll(TFC_device_t device, TFC_entry_t *entry) {
+  assert(entry != NULL);
+  // make progress on send queue
+  TFCI_device_t *p_device = (TFCI_device_t *)device;
+  TFC_progress_push(device);
 
   // probe and post Irecv
   while (!LCM_dq_is_full(&p_device->pending_rq)) {
@@ -158,6 +177,9 @@ static inline TFC_error_t TFC_stream_poll(TFC_device_t device, TFC_entry_t *entr
     free(p_pending);
     return TFC_SUCCESS;
   }
+}
+static void TFC_barrier(TFC_device_t device) {
+  MPI_Barrier(MPI_COMM_WORLD);
 }
 
 

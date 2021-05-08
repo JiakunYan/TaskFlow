@@ -2,7 +2,7 @@
 
 
 namespace tf {
-Communicator::Communicator() : p_thread(nullptr), toStop(false) {
+Communicator::Communicator() : p_thread(nullptr), toStop(false), isDrained(false) {
   TFC_init_device(&device);
   rank = TFC_rank_me(device);
   nranks = TFC_rank_n(device);
@@ -10,7 +10,13 @@ Communicator::Communicator() : p_thread(nullptr), toStop(false) {
 }
 Communicator::~Communicator() {
   MLOG_Assert(p_thread == nullptr, "Progress thread haven't been joined!\n");
+  if (!isDrained)
+    MLOG_Log(MLOG_LOG_WARN, "You must drain the communicator send queue before destroying it!\n");
   TFC_finalize_device(&device);
+}
+
+void Communicator::barrier() {
+  TFC_barrier(device);
 }
 
 /**
@@ -51,6 +57,14 @@ void Communicator::progress() {
   }
   matchEntry.chunk_num = -1;
   matchEntry.chunks.clear();
+}
+
+void Communicator::drain() {
+  bool isSendDone = false;
+  do {
+    isSendDone = TFC_progress_push(device);
+  } while (!isSendDone);
+  isDrained = true;
 }
 
 void Communicator::startPrgThread() {

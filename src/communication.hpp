@@ -43,6 +43,7 @@ private:
   TFC_device_t device;
   int rank;
   int nranks;
+  bool isDrained;
   std::vector<ActiveMsg> activeMsgs;
   std::vector<MatchEntry> matchArray;
   volatile bool toStop;
@@ -73,7 +74,10 @@ public:
     return ActiveMsgIdx{device, id};
   }
 
+  void barrier();
+
   void progress();
+  void drain();
 
   void startPrgThread();
   void joinPrgThread();

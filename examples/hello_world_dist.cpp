@@ -58,5 +58,7 @@ int main() {
   context.start();
   while (!context.tryJoin())
     comm.progress();
+  comm.drain();
+  comm.barrier();
   return 0;
 }
