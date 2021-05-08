@@ -30,7 +30,7 @@ int main() {
 
   // Set global variabls
   int N = 160;
-  int n = 5;
+  int n = 10;
   
 
   int p = 1;
@@ -84,7 +84,21 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
       int i = ij[0]+1;
       int j = ij[1]+1;
       assert(i >= j);
-      return static_cast<double>(N*N - ((i*(i-1))/2 + j));
+
+      double current_prio = static_cast<double>(N*N - ((i*(i-1))/2 + j));
+
+      int priority = 0;
+      if (current_prio < 0.1 * N * N) {
+        priority = 0;
+      } else if (current_prio < 0.3 * N * N) {
+        priority = 1;
+      } else if (current_prio > 0.5 * N * N) {
+        priority = 2;
+      } else {
+        priority = 3;
+      }
+
+      return priority;
   };
 
   // Block the matrix for every node
@@ -122,6 +136,9 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
       })
       .setName([](int j) {
         return string("POTF at ") + to_string(j);
+      })
+      .setPriority([&](int j) {
+        return block2prio({j, j});
       });
 
 
@@ -164,6 +181,9 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
       })
       .setName([](int2 ij) {
         return string("TRSM at ") + to_string(ij[0]) + "_" + to_string(ij[1]);
+      })
+      .setPriority([&](int2 ij) {
+        return block2prio(ij);
       });
   
 
@@ -196,6 +216,9 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
       })
       .setName([](int3 ijk) {
         return string("GEMM at ") + to_string(ijk[0]) + "_" + to_string(ijk[1]) + "_" + to_string(ijk[2]);
+      })
+      .setPriority([&](int3 ijk) {
+        return block2prio({ijk[0], ijk[1]});
       });
   
   // signal the first task
