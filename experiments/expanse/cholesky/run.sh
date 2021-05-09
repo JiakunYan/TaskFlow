@@ -1,28 +1,30 @@
 #!/bin/bash
 
+function ceil(){
+        echo "$1 $2" | awk '{a=int($1/$2); if ($1 % $2 != 0) a++; print a; }'
+}
+
 # exit when any command fails
 set -e
 # import the the script containing common functions
-source ../include/scripts.sh
+source ../../include/scripts.sh
 
-task="cholesky.slurm"
-sbatch_path=$(realpath "${sbatch_path:-.}")
-exe_path=$(realpath "${exe_path:-init/build/benchmarks}")
-
-if [[ -d "${exe_path}" ]]; then
-  echo "Run TaskFlow benchmarks at ${exe_path}"
-else
-  echo "Did not find benchmarks at ${exe_path}!"
-  exit 1
-fi
+WORK_ROOT=$(realpath .)
+export WORK_ROOT=$WORK_ROOT
 
 # create the ./run directory
 mkdir_s ./run
+NPROCS=(8 16 32 64 128 256 512 1024)
 
-module load python
-
+cd run
 for i in $(eval echo {1..${1:-7}}); do
-  cd run
-  sbatch ${sbatch_path}/${task} ${sbatch_path} ${exe_path} || { echo "sbatch error!"; exit 1; }
-  cd ../
+  for nprocs in "${NPROCS[@]}"; do
+    if [[ ${nprocs} -lt 65 ]]; then
+      sbatch -N 1 -n ${nprocs} ../cholesky.shared.slurm || { echo "sbatch error!"; exit 1; }
+    else
+      sbatch -N $(ceil ${nprocs} 128) ../cholesky.slurm || { echo "sbatch error!"; exit 1; }
+    fi
+  done
+  sbatch ../cholesky_block.slurm
 done
+cd ../

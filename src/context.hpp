@@ -2,6 +2,13 @@
 #define TASKFLOW_CONTEXT_HPP
 
 namespace tf {
+struct Config {
+  ABT_sched_predef sched_type = ABT_SCHED_PRIO;
+  int sched_prio_npools = 4;
+
+  Config();
+};
+
 class Context {
 public:
   Context(int nxstreams_);
@@ -61,6 +68,8 @@ public:
   inline int rank_n() {
     return nxstreams;
   }
+
+  const Config config;
 
 private:
   friend void runTaskWrapper(void *args);

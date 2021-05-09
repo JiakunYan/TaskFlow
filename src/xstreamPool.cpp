@@ -17,19 +17,15 @@ void runTaskWrapper(void *args) {
 XStreamPool::XStreamPool(Context *context_, int nxstreams_) : isEverStarted(false) {
   this->context = context_;
   this->nxstreams = nxstreams_;
-  this->num_pools = (int *)calloc(nxstreams_, sizeof(int));
   this->xstreams = (ABT_xstream *)calloc(nxstreams_, sizeof(ABT_xstream));
   this->scheds = (ABT_sched *)calloc(nxstreams_, sizeof(ABT_sched));
-  this->pools = (ABT_pool **)calloc(nxstreams_, sizeof(ABT_pool*));
 }
 
 
 // XstreamPool Destructor
 XStreamPool::~XStreamPool() {
-  free(num_pools);
   free(xstreams);
   free(scheds);
-  free(pools);
 }
 
 void XStreamPool::init() {
@@ -37,17 +33,43 @@ void XStreamPool::init() {
 //  ret = ABT_xstream_self(&xstreams[0]);
 //  TF_CHECK_ABT(ret);
 
-  /* Create 4 pools for each xstreams. */
-  for (int i = 0; i < nxstreams; i++) {
-    num_pools[i] = 4; // So there will be 4 candidate pools in each "pool"
-    pools[i] = (ABT_pool *)malloc(num_pools[i] * sizeof(ABT_pool));
-    for  (int k = 0; k < num_pools[i]; k++) {
-      ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPSC, ABT_TRUE, &pools[i][k]);
+  if (context->config.sched_type == ABT_SCHED_PRIO) {
+    /* Create 4 pools for each xstreams. */
+    int npools = context->config.sched_prio_npools * nxstreams;
+    pools = (ABT_pool *)malloc(npools * sizeof(ABT_pool));
+    for (int i = 0; i < nxstreams * context->config.sched_prio_npools; ++i) {
+      ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPSC, ABT_TRUE,
+                            &pools[i]);
     }
-  }
-
-  for (int i = 0; i < nxstreams; i++) {
-    ABT_sched_create_basic(ABT_SCHED_PRIO, num_pools[i], pools[i], ABT_SCHED_CONFIG_NULL, &scheds[i]);
+    for (int i = 0; i < nxstreams; ++i) {
+      ABT_sched_create_basic(ABT_SCHED_PRIO, context->config.sched_prio_npools,
+                             &pools[i * context->config.sched_prio_npools],
+                             ABT_SCHED_CONFIG_NULL, &scheds[i]);
+    }
+  } else if (context->config.sched_type == ABT_SCHED_BASIC) {
+    pools = (ABT_pool *)malloc(nxstreams * sizeof(ABT_pool));
+    for (int i = 0; i < nxstreams; i++) {
+      ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPSC, ABT_TRUE,
+                            &pools[i]);
+      ABT_sched_create_basic(ABT_SCHED_BASIC, 1, &pools[i],
+                             ABT_SCHED_CONFIG_NULL, &scheds[i]);
+    }
+  } else {
+    MLOG_Assert(context->config.sched_type == ABT_SCHED_RANDWS, "Unknown sched type!\n");
+    pools = (ABT_pool *)malloc(nxstreams * sizeof(ABT_pool));
+    for (int i = 0; i < nxstreams; i++) {
+      ABT_pool_create_basic(ABT_POOL_FIFO, ABT_POOL_ACCESS_MPMC, ABT_TRUE,
+                            &pools[i]);
+    }
+    ABT_pool* my_pools = (ABT_pool *)malloc(nxstreams * sizeof(ABT_pool));
+    for (int i = 0; i < nxstreams; i++) {
+      for (int k = 0; k < nxstreams; k++) {
+        my_pools[k] = pools[(i + k) % nxstreams];
+      }
+      ABT_sched_create_basic(ABT_SCHED_RANDWS, nxstreams, my_pools,
+                             ABT_SCHED_CONFIG_NULL, &scheds[i]);
+    }
+    free(my_pools);
   }
 }
 
@@ -57,10 +79,7 @@ void XStreamPool::finalize() {
     ret = ABT_xstream_free(&xstreams[i]);
     TF_CHECK_ABT(ret);
   }
-  for (int i = 0; i < nxstreams; i++) {
-    if (pools[i])
-      free(pools[i]);
-  }
+  free(pools);
 }
 
 void XStreamPool::start() {
@@ -88,9 +107,15 @@ void XStreamPool::join() {
 }
 
 void XStreamPool::pushReadyTask(Task *p_task) {
-  static std::atomic<int64_t> i(0);
   int ret;
-  ret = ABT_task_create(pools[i++ % nxstreams][static_cast<int>(p_task->priority)], runTaskWrapper,
+  int stream_id = p_task->affinity % nxstreams;
+  int idx;
+  if (context->config.sched_type == ABT_SCHED_PRIO) {
+    idx = stream_id * context->config.sched_prio_npools + (int)p_task->priority % context->config.sched_prio_npools;
+  } else {
+    idx = stream_id;
+  }
+  ret = ABT_task_create(pools[idx], runTaskWrapper,
                         p_task, nullptr);
   TF_CHECK_ABT(ret);
 }

@@ -14,11 +14,9 @@ target_link_libraries(micro_deps PRIVATE tf-lib)
 
 find_package(MPI REQUIRED)
 find_package(Eigen3 REQUIRED)
-if(EIGEN3_FOUND)
-    add_executable(cholesky_dist ../benchmarks/cholesky_dist.cpp)
-    target_link_libraries(cholesky_dist PRIVATE tf-lib)
-    target_include_directories(cholesky_dist PRIVATE ${EIGEN3_INCLUDE_DIR})
-endif()
+add_executable(cholesky_dist ../benchmarks/cholesky_dist.cpp)
+target_link_libraries(cholesky_dist PRIVATE tf-lib)
+target_include_directories(cholesky_dist PRIVATE ${EIGEN3_INCLUDE_DIR})
 
 find_package(TaskTorrent)
 if (TaskTorrent_FOUND)
@@ -26,6 +24,12 @@ if (TaskTorrent_FOUND)
     add_ttor_executable(ttor_micro_deps ttor_micro_deps.cpp)
     add_ttor_executable(ttor_cholesky ttor_cholesky.cpp)
     target_include_directories(ttor_cholesky PRIVATE ${EIGEN3_INCLUDE_DIR})
+endif()
+
+find_package(OpenMP)
+if (OpenMP_FOUND)
+    add_executable(omp_wait omp_wait.cpp)
+    target_link_libraries(omp_wait  PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 find_package(PaRSEC HINTS

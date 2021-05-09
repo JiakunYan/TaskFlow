@@ -92,7 +92,7 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
         priority = 0;
       } else if (current_prio < 0.3 * N * N) {
         priority = 1;
-      } else if (current_prio > 0.5 * N * N) {
+      } else if (current_prio < 0.5 * N * N) {
         priority = 2;
       } else {
         priority = 3;

@@ -17,6 +17,7 @@ struct Task {
   Context *p_context;
   std::function<void()> run;
   double priority;
+  int affinity;
   std::string name;
 
   struct OpLess {
@@ -39,8 +40,7 @@ public:
     };
     outdep_fn = [](TaskIdx taskIdx) { (void)taskIdx; };
     priority_fn = [](TaskIdx taskIdx) { return 0.0; };
-    affinity_fn = [](TaskIdx taskIdx) { return 0; };
-    binding_fn = [](TaskIdx taskIdx) { return false; };
+    affinity_fn = [](TaskIdx taskIdx) { return lrand48(); };
     name_fn = [](TaskIdx taskIdx) { return "AnonymousTask"; };
   }
 
@@ -66,16 +66,12 @@ public:
     return *this;
   }
   /**
-   * @brief set the process rank to run the task
+   * @brief set the intended xstream rank to run the task
    * @param f the mapping from task index to rank
    * @return reference to the taskClass object
    */
   TaskClass &setAffinity(std::function<int(TaskIdx)> f) {
     affinity_fn = std::move(f);
-    return *this;
-  }
-  TaskClass & setBinding(std::function<bool(TaskIdx)> f) {
-    binding_fn = std::move(f);
     return *this;
   }
   TaskClass & setName(std::function<std::string(TaskIdx)> f) {
@@ -88,10 +84,7 @@ public:
     t->run = [this, taskIdx]() { task_fn(taskIdx); outdep_fn(taskIdx); };
     t->name = name_fn(taskIdx);
     t->priority = priority_fn(taskIdx);
-    // We have not implemented the distributed memory verison yet.
-    assert(affinity_fn(taskIdx) == 0);
-    // Current version makes all tasks unbound.
-    assert(binding_fn(taskIdx) == false);
+    t->affinity = affinity_fn(taskIdx);
     return t;
   }
 
@@ -172,7 +165,6 @@ private:
   std::function<double(TaskIdx)> priority_fn;
   std::function<int(TaskIdx)> indep_fn;
   std::function<int(TaskIdx)> affinity_fn;
-  std::function<bool(TaskIdx)> binding_fn;
   std::function<std::string(TaskIdx)> name_fn;
 };
 }

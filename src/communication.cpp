@@ -3,6 +3,8 @@
 
 namespace tf {
 Communicator::Communicator() : p_thread(nullptr), toStop(false), isDrained(false) {
+  MLOG_Init();
+  TFC_init();
   TFC_init_device(&device);
   rank = TFC_rank_me(device);
   nranks = TFC_rank_n(device);
@@ -12,6 +14,7 @@ Communicator::~Communicator() {
   if (!isDrained)
     MLOG_Log(MLOG_LOG_WARN, "You must drain the communicator send queue before destroying it!\n");
   TFC_finalize_device(&device);
+  TFC_finalize();
 }
 
 void Communicator::barrier() {

@@ -10,6 +10,7 @@
 #include <mpi.h>
 
 #include "tasktorrent.hpp"
+#include "bench_common.h"
 
 using namespace std;
 using namespace Eigen;
@@ -22,7 +23,7 @@ int VERB = 0;
 bool LOG = false;
 int n_threads_ = 4;
 int n_ = 128;
-int N_ = 32;
+int N_ = 8;
 int p_ = 1;
 int q_ = 1;
 
@@ -33,6 +34,10 @@ void cholesky(int n_threads, int n, int N, int p, int q)
     const int n_ranks = comm_size();
     if(VERB) printf("[%d] Hello from %s\n", comm_rank(), processor_name().c_str());
 
+    if (p * q != n_ranks) {
+      for (p = (int)sqrt((double)n_ranks); p > 0 && n_ranks % p != 0; --p) continue;
+      q = n_ranks / p;
+    }
     assert(p * q == n_ranks);
     assert(p >= 1);
     assert(q >= 1);
@@ -285,18 +290,19 @@ void cholesky(int n_threads, int n, int N, int p, int q)
                 return block2prio({ijk[0], ijk[1]});
             });
 
-            if(rank == 0) printf("Starting Cholesky\n");
+            if(rank == 0 && VERB) printf("Starting Cholesky\n");
             MPI_Barrier(MPI_COMM_WORLD);
-            timer t0 = wctime();
+            double t0 = getWallTime();
             if (rank == 0){
                 potf_tf.fulfill_promise(0);
             }
             tp.join();
-            timer t1 = wctime();
             MPI_Barrier(MPI_COMM_WORLD);
+            double t1 = getWallTime();
             if(rank == 0)
             {
-                cout << "Time : " << elapsed(t0, t1) << endl;
+              printf("ttor_cholesky nranks: %d [%dx%d] nthreads: %d N: %d n: %d time: %.2lf\n",
+                     n_ranks, p, q, n_threads, N, n, t1-t0);
             }
 
             if(LOG) {
@@ -308,6 +314,7 @@ void cholesky(int n_threads, int n, int N, int p, int q)
             }
     }
 
+#ifndef NDEBUG
     // Gather everything on rank 0 and test for accuracy
     {
         Communicator comm(MPI_COMM_WORLD, VERB);
@@ -358,7 +365,10 @@ void cholesky(int n_threads, int n, int N, int p, int q)
                 L.solveInPlace(b);
                 L.transpose().solveInPlace(b);
                 double error = (b - x).norm() / x.norm();
-                cout << "Error solve: " << error << endl;
+                if (error >= 1e-10) {
+                  cout << "Error solve: " << error << endl;
+                  exit(EXIT_FAILURE);
+                }
             }
             // Test 2
             {
@@ -370,6 +380,7 @@ void cholesky(int n_threads, int n, int N, int p, int q)
             }
         }
     }
+#endif
 }
 
 int main(int argc, char **argv)
@@ -416,6 +427,7 @@ int main(int argc, char **argv)
     int N = N_;
     int p = p_;
     int q = q_;
+
     cholesky(n_threads, n, N, p, q);
 
     MPI_Finalize();

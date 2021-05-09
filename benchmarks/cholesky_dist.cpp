@@ -9,7 +9,7 @@
 #include <tuple>
 
 #include "tf.hpp"
-
+#include "bench_common.h"
 using namespace std;
 using namespace Eigen;
 using namespace tf;
@@ -20,7 +20,7 @@ typedef array<int, 3> int3;
 int VERB = 0;
 int n_threads_ = 4;
 int n_ = 128;
-int N_ = 32;
+int N_ = 8;
 int p_ = 1;
 int q_ = 1;
 
@@ -33,6 +33,10 @@ void cholesky(int n_threads, int n, int N, int p, int q)
   const int rank = comm.rank_me();
   const int n_ranks = comm.rank_n();
 
+  if (p * q != n_ranks) {
+    for (p = (int)sqrt((double)n_ranks); p > 0 && n_ranks % p != 0; --p) continue;
+    q = n_ranks / p;
+  }
   assert(p * q == n_ranks);
   assert(p >= 1);
   assert(q >= 1);
@@ -80,7 +84,7 @@ void cholesky(int n_threads, int n, int N, int p, int q)
       priority = 0;
     } else if (current_prio < 0.3 * N * N) {
       priority = 1;
-    } else if (current_prio > 0.5 * N * N) {
+    } else if (current_prio < 0.5 * N * N) {
       priority = 2;
     } else {
       priority = 3;
@@ -146,6 +150,9 @@ void cholesky(int n_threads, int n, int N, int p, int q)
 
     // potf
     potf_tf
+        .setAffinity([&](int j) {
+          return (j % n_threads);
+        })
         .setInDep([](int) {
           return 1;
         })
@@ -200,6 +207,9 @@ void cholesky(int n_threads, int n, int N, int p, int q)
 
     // trsm
     trsm_tf
+        .setAffinity([&](int2 ij) {
+          return ((ij[0] + ij[1] * N) % n_threads);
+        })
         .setInDep([](int2 ij) {
           return (ij[1] == 0 ? 0 : 1) + 1;
         })
@@ -259,7 +269,9 @@ void cholesky(int n_threads, int n, int N, int p, int q)
         });
 
     // gemm
-    gemm_tf
+    gemm_tf.setAffinity([&](int3 ijk) {
+          return ((ijk[0] + ijk[1] * N + ijk[2] * N * N) % n_threads);
+        })
         .setInDep([](int3 ijk) {
           int i = ijk[0];
           int j = ijk[1];
@@ -298,7 +310,7 @@ void cholesky(int n_threads, int n, int N, int p, int q)
         });
 
     comm.barrier();
-    auto start = chrono::high_resolution_clock::now();
+    double t0 = getWallTime();
     context.start(1);
     if (rank == 0){
       context.signal(potf_tf, 0);
@@ -308,14 +320,15 @@ void cholesky(int n_threads, int n, int N, int p, int q)
     }
     comm.drain();
     comm.barrier();
-    auto end = chrono::high_resolution_clock::now();
+    double t1 = getWallTime();
 
     if(rank == 0) {
-      chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(end - start);
-      cout << "Time : " << time_span.count() << endl;
+      printf("cholesky_dist nranks: %d [%dx%d] nthreads: %d N: %d n: %d time: %.2lf\n",
+             n_ranks, p, q, n_threads, N, n, t1-t0);
     }
   }
 
+#ifndef NDEBUG
   // Gather everything on rank 0 and test for accuracy
   {
     int recv_num = 0;
@@ -371,9 +384,13 @@ void cholesky(int n_threads, int n, int N, int p, int q)
       L.solveInPlace(b);
       L.transpose().solveInPlace(b);
       double error = (b - x).norm() / x.norm();
-      cout << "Error solve: " << error << endl;
+      if (error >= 1e-10) {
+        cout << "Error solve: " << error << endl;
+        exit(EXIT_FAILURE);
+      }
     }
   }
+#endif
 }
 
 

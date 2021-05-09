@@ -5,10 +5,10 @@ using namespace std;
 
 using int2 = std::array<int, 2>;
 const double totalWork = 1.0;
-int nthreads = 3;
+int nthreads = 4;
 double spinTime = 1e-5;
 int nrows = nthreads;
-int ndeps = 1;
+int ndeps = 3;
 //bool includeTaskInsert = true;
 
 int main(int argc, char **argv) {
@@ -53,10 +53,10 @@ int main(int argc, char **argv) {
           context.signal(tasks, {(row+i) % nrows, col+1});
         }
       });
-  t0 = getWallTime();
-  context.start();
   for (int i = 0; i < nrows; ++i)
     context.signal(tasks, {i, 0});
+  t0 = getWallTime();
+  context.start();
   context.join();
   t1 = getWallTime();
   double time = t1 - t0;
