@@ -10,3 +10,6 @@ endif()
 
 add_executable(qr_gram-schmidt qr_gram-schmidt.cpp)
 target_link_libraries(qr_gram-schmidt PRIVATE tf-lib)
+
+add_executable(stencil stencil.cpp)
+target_link_libraries(stencil PRIVATE tf-lib)
