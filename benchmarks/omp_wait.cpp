@@ -1,6 +1,6 @@
 #include <fstream>
 #include <iostream>
-#include "bench_common.hpp"
+#include "bench_common.h"
 #include <omp.h>
 
 /**

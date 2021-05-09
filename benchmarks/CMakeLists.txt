@@ -26,11 +26,11 @@ if (TaskTorrent_FOUND)
     target_include_directories(ttor_cholesky PRIVATE ${EIGEN3_INCLUDE_DIR})
 endif()
 
-find_package(OpenMP)
-if (OpenMP_FOUND)
-    add_executable(omp_wait omp_wait.cpp)
-    target_link_libraries(omp_wait  PRIVATE OpenMP::OpenMP_CXX)
-endif()
+#find_package(OpenMP)
+#if (OpenMP_FOUND)
+#    add_executable(omp_wait omp_wait.cpp)
+#    target_link_libraries(omp_wait  PRIVATE OpenMP::OpenMP_CXX)
+#endif()
 
 find_package(PaRSEC HINTS
         ${PaRSEC_ROOT}

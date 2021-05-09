@@ -4,7 +4,7 @@ import numpy as np
 import ast
 import pandas as pd
 import os,sys
-sys.path.append("../include")
+sys.path.append("../../include")
 from draw_simple import *
 import json
 
@@ -12,10 +12,10 @@ name = "micro_deps"
 input_path = "run/slurm_output.*"
 output_path = "draw/"
 edge_data = {
-    "format": "nthreads: (\d+)\s+ spinTime\(us\): (\S+)\s+ nrows: (\d+)\s+ ncols: \d+\s+ ndeps: (\d)\s+ time\(s\): \S+\s+  efficiency (\S+)",
-    "label": ["nthreads", "spinTime", "nrows", "ndeps", "efficiency"]
+    "format": "(\S+) nthreads: (\d+) spinTime\(us\): (\S+) nrows: (\d+) ncols: \d+ ndeps: (\d) time\(s\): \S+ efficiency (\S+)",
+    "label": ["task", "nthreads", "spinTime", "nrows", "ndeps", "efficiency"]
 }
-all_labels = ["nthreads", "spinTime", "nrows", "ndeps", "efficiency"]
+all_labels = ["task", "nthreads", "spinTime", "nrows", "ndeps", "efficiency"]
 
 def get_typed_value(value):
     if value == '-nan':
@@ -55,27 +55,26 @@ if __name__ == "__main__":
     else:
         print("get {} entries".format(df.shape[0]))
     df = df.reindex(columns=all_labels)
+    df = df.sort_values(["nthreads", "ndeps", "spinTime"])
     df.to_csv(os.path.join(output_path, "{}.csv".format(name)))
 
     # df = pd.read_csv("draw/basic.csv")
-    df1 = df[df.apply(lambda row: row["ndeps"] == 1 and
-                                  row["nrows"] == row["nthreads"]*4, axis=1)]
+    df1 = df[df.apply(lambda row: row["ndeps"] == 1, axis=1)]
     draw_config1 = {
         "name": "micro_deps1",
-        "x_key": "spinTime",
+        "x_key": "nthreads",
         "y_key": "efficiency",
-        "tag_keys": ["nthreads"],
+        "tag_keys": ["task", "spinTime"],
         "output": "draw/",
     }
-    draw_tags(draw_config1, df=df1)
+    draw_tags(draw_config1, df=df1, drawError=False)
 
-    df2 = df[df.apply(lambda row: row["nthreads"] == 12 and
-                                  row["spinTime"] == 10, axis=1)]
+    df2 = df[df.apply(lambda row: row["spinTime"] == 100, axis=1)]
     draw_config2 = {
         "name": "micro_deps2",
-        "x_key": "ndeps",
+        "x_key": "nthreads",
         "y_key": "efficiency",
-        "tag_keys": ["nrows"],
+        "tag_keys": ["task", "ndeps"],
         "output": "draw/",
     }
-    draw_tags(draw_config2, df=df2)
+    draw_tags(draw_config2, df=df2, drawError=False)
