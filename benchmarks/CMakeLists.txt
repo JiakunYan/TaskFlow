@@ -9,14 +9,29 @@ function(add_ttor_executable EXEC)
     target_link_libraries(${EXEC} PRIVATE ${MPI_CXX_LIBRARIES} ${MPI_CXX_LINK_FLAGS})
 endfunction()
 
-add_executable(micro_deps micro_deps.cpp)
-target_link_libraries(micro_deps PRIVATE tf-lib)
+function(add_mpi_executable EXEC)
+    add_executable(${EXEC} ${ARGN})
+    target_include_directories(${EXEC} PRIVATE ${MPI_CXX_INCLUDE_PATH})
+    target_compile_options(${EXEC} PRIVATE ${MPI_CXX_COMPILE_FLAGS})
+    target_link_libraries(${EXEC} PRIVATE ${MPI_CXX_LIBRARIES} ${MPI_CXX_LINK_FLAGS} mlog-lib)
+endfunction()
 
 find_package(MPI REQUIRED)
 find_package(Eigen3 REQUIRED)
+
+add_executable(micro_deps micro_deps.cpp)
+target_link_libraries(micro_deps PRIVATE tf-lib)
+add_executable(micro_comm_lat micro_comm_lat.cpp)
+target_link_libraries(micro_comm_lat PRIVATE tf-lib)
+add_executable(micro_comm_bw micro_comm_bw.cpp)
+target_link_libraries(micro_comm_bw PRIVATE tf-lib)
+
 add_executable(cholesky_dist ../benchmarks/cholesky_dist.cpp)
 target_link_libraries(cholesky_dist PRIVATE tf-lib)
 target_include_directories(cholesky_dist PRIVATE ${EIGEN3_INCLUDE_DIR})
+
+add_mpi_executable(mpi_lat mpi_lat.cpp)
+add_mpi_executable(mpi_bw mpi_bw.cpp)
 
 find_package(TaskTorrent)
 if (TaskTorrent_FOUND)
