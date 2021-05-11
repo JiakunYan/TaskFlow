@@ -84,19 +84,18 @@ IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
       int i = ij[0]+1;
       int j = ij[1]+1;
       assert(i >= j);
-
+    
       double current_prio = static_cast<double>(N*N - ((i*(i-1))/2 + j));
 
       int priority = 0;
-      if (current_prio < 0.1 * N * N) {
-        priority = 0;
-      } else if (current_prio < 0.3 * N * N) {
-        priority = 1;
-      } else if (current_prio < 0.5 * N * N) {
-        priority = 2;
-      } else {
+
+      if (current_prio > 0.968 * N * N) {
         priority = 3;
-      }
+      } else if (current_prio > 0.875 * N * N) {
+        priority = 2;
+      } else if (current_prio > 0.719 * N * N) {
+        priority = 1;
+      } 
 
       return priority;
   };
