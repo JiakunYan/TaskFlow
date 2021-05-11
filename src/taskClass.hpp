@@ -1,4 +1,6 @@
 #include <utility>
+#include <iostream>
+#include <libcuckoo/cuckoohash_map.hh>
 
 #ifndef TASKFLOW_TASKCLASS_HPP
 #define TASKFLOW_TASKCLASS_HPP
@@ -15,6 +17,7 @@ struct Task {
   Context *p_context;
   std::function<void()> run;
   double priority;
+  int affinity;
   std::string name;
 
   struct OpLess {
@@ -37,8 +40,7 @@ public:
     };
     outdep_fn = [](TaskIdx taskIdx) { (void)taskIdx; };
     priority_fn = [](TaskIdx taskIdx) { return 0.0; };
-    affinity_fn = [](TaskIdx taskIdx) { return 0; };
-    binding_fn = [](TaskIdx taskIdx) { return false; };
+    affinity_fn = [](TaskIdx taskIdx) { return lrand48(); };
     name_fn = [](TaskIdx taskIdx) { return "AnonymousTask"; };
   }
 
@@ -63,12 +65,13 @@ public:
     priority_fn = std::move(f);
     return *this;
   }
+  /**
+   * @brief set the intended xstream rank to run the task
+   * @param f the mapping from task index to rank
+   * @return reference to the taskClass object
+   */
   TaskClass &setAffinity(std::function<int(TaskIdx)> f) {
     affinity_fn = std::move(f);
-    return *this;
-  }
-  TaskClass & setBinding(std::function<bool(TaskIdx)> f) {
-    binding_fn = std::move(f);
     return *this;
   }
   TaskClass & setName(std::function<std::string(TaskIdx)> f) {
@@ -81,43 +84,80 @@ public:
     t->run = [this, taskIdx]() { task_fn(taskIdx); outdep_fn(taskIdx); };
     t->name = name_fn(taskIdx);
     t->priority = priority_fn(taskIdx);
-    // We have not implemented the distributed memory verison yet.
-    assert(affinity_fn(taskIdx) == 0);
-    // Current version makes all tasks unbound.
-    assert(binding_fn(taskIdx) == false);
+    t->affinity = affinity_fn(taskIdx);
     return t;
   }
 
   Task* signal(TaskIdx taskIdx) {
     int indegree = indep_fn(taskIdx);
     if (indegree == 1) {
+      MLOG_DBG_Log(MLOG_LOG_TRACE, "signal %s inDep 1/1\n", name_fn(taskIdx).c_str());
+//      ++nTaskInFlight;
       Task *p_task = makeTask(taskIdx);
       return p_task;
     }
     Task* ret = nullptr;
 
+ #ifdef TF_USE_LIBCUCKOO
+    bool flag = false;
+
+    auto fn = [&](int &val) {
+      --val;
+      MLOG_DBG_Log(MLOG_LOG_TRACE, "signal %s inDep %d/%d\n", name_fn(taskIdx).c_str(), indegree - val, indegree);
+      if (val == 0) {
+        flag = true;
+        return true;
+      } else {
+        flag = false;
+        return false;
+      }
+    };
+    
+    bool isNewKey = depCounter.uprase_fn(taskIdx, fn, indegree - 1);
+    if (isNewKey) {
+      // a new key is inserted
+//      ++nTaskInFlight;
+      MLOG_DBG_Log(MLOG_LOG_TRACE, "signal %s inDep 1/%d\n", name_fn(taskIdx).c_str(), indegree);
+    }
+    if (flag == true) {
+      Task *p_task = makeTask(taskIdx);
+      ret = p_task;
+    }
+ #else
     depCounterLock.lock();
     auto search = depCounter.find(taskIdx);
     if (search == depCounter.end()) {
       assert(indegree > 1);
+//      ++nTaskInFlight;
       auto insert_ret = depCounter.insert(std::make_pair(taskIdx, indegree - 1));
       assert(insert_ret.second); // (taskIdx, indegree-1) was successfully inserted
+      MLOG_DBG_Log(MLOG_LOG_TRACE, "signal %s inDep 1/%d\n", name_fn(taskIdx).c_str(), indegree);
     } else {
       int count = --search->second;
+      MLOG_DBG_Log(MLOG_LOG_TRACE, "signal %s inDep %d/%d\n", name_fn(taskIdx).c_str(), indegree - count, indegree);
       assert(count >= 0);
       if (count == 0) {
         depCounter.erase(taskIdx);
         Task *p_task = makeTask(taskIdx);
         ret = p_task;
-      }
-    }
-    depCounterLock.unlock();
+       }
+     }
+     depCounterLock.unlock();
+ #endif
+    
     return ret;
   }
 
 private:
-  using DepMap = std::unordered_map<TaskIdx, int, hash_int_N<TaskIdx>>;
+
+ #ifdef TF_USE_LIBCUCKOO
+   using DepMap = libcuckoo::cuckoohash_map<TaskIdx, int, hash_int_N<TaskIdx>>;
+ #else
+   using DepMap = std::unordered_map<TaskIdx, int, hash_int_N<TaskIdx>>;
+ #endif
+  
   DepMap depCounter;
+
   std::mutex depCounterLock;
 
   std::function<void(TaskIdx)> task_fn;
@@ -125,7 +165,6 @@ private:
   std::function<double(TaskIdx)> priority_fn;
   std::function<int(TaskIdx)> indep_fn;
   std::function<int(TaskIdx)> affinity_fn;
-  std::function<bool(TaskIdx)> binding_fn;
   std::function<std::string(TaskIdx)> name_fn;
 };
 }

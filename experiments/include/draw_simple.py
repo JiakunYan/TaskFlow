@@ -133,7 +133,7 @@ def draw_tag(config):
         json.dump(lines, outfile)
     line_plot(title, x_key, y_key, lines, os.path.join(config["output"], "{}.png".format(config["name"])), False, is_show=False, is_save=True)
 
-def draw_tags(config, df = None):
+def draw_tags(config, df = None, drawError = True):
     if df is None:
         df = pd.read_csv(config["input"])
     lines = []
@@ -162,7 +162,10 @@ def draw_tags(config, df = None):
             current_domain.append(float(x))
             current_value.append(float(y))
             current_error.append(float(error))
-        lines.append({'label': str(tags), 'domain': current_domain, 'range': current_value, 'error': current_error})
+        if drawError:
+            lines.append({'label': str(tags), 'domain': current_domain, 'range': current_value, 'error': current_error})
+        else:
+            lines.append({'label': str(tags), 'domain': current_domain, 'range': current_value})
 
     if len(lines) == 0:
         print("Error! Got 0 line!")

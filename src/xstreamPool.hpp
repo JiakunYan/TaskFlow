@@ -15,9 +15,10 @@ public:
 private:
   Context *context;
   int nxstreams;
-  int* num_pools;
   ABT_xstream* xstreams;
-  ABT_pool** pools;
+  ABT_sched* scheds;
+  ABT_pool* pools;
+  bool isEverStarted;
 };
 } // namespace tf
 #endif // TASKFLOW_XSTREAM_POOL_HPP

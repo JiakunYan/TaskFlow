@@ -1,0 +1,139 @@
+extern "C" %{
+#include "bench_common.h"
+#include "parsec.h"
+
+const double totalWork = 1.0;
+int nthreads = 3;
+double spinTime = 10; // in us
+int nrows;
+long ncols;
+int ndeps = 1;
+  %}
+
+NROWS   [ type="int" ]
+NCOLS   [ type="long" ]
+
+Task(i, j)
+
+i = 0 .. NROWS-1
+j = 0 .. NCOLS-1
+
+: taskdist( i + j )
+
+RW  A <- (j == 0) ? NEW : A Task( i, j-1 )
+      -> (j < NCOLS) ? A Task( i, j+1 )
+
+BODY
+{
+spinForSeconds(spinTime * 1e-6);
+//printf("task %d %d\n", i, j);
+}
+END
+
+extern "C" %{
+
+static uint32_t
+rank_of(parsec_data_collection_t *desc, ...)
+{
+  (void)desc;
+  return 0;
+}
+
+static int32_t
+vpid_of(parsec_data_collection_t *desc, ...)
+{
+  (void)desc;
+  return 0;
+}
+
+static parsec_data_key_t
+data_key(parsec_data_collection_t *desc, ...)
+{
+  int k;
+  va_list ap;
+  (void)desc;
+  va_start(ap, desc);
+  k = va_arg(ap, int);
+  va_end(ap);
+  return (uint64_t)k;
+}
+
+int main(int argc, char *argv[])
+{
+  nrows = nthreads;
+  if (argc >= 2) {
+    nthreads = atoi(argv[1]);
+    nrows = nthreads;
+    if(nthreads <= 0) { printf("Wrong argument\n"); exit(1); }
+  }
+  if (argc >= 3) {
+    spinTime = atof(argv[2]);
+    if(spinTime < 0) { printf("Wrong argument\n"); exit(1); }
+  }
+  if (argc >= 4) {
+    nrows = atof(argv[3]);
+    if(nrows < 1) { printf("Wrong argument\n"); exit(1); }
+  }
+  if (argc >= 5) {
+    ndeps = atof(argv[4]);
+    if(ndeps < 1) { printf("Wrong argument\n"); exit(1); }
+  }
+  // spin for roughly 2 seconds in total
+  long ntasks = totalWork / spinTime * 1e6 * nthreads;
+  ncols = (ntasks + nrows - 1) / nrows;
+  assert(nrows >= ndeps);
+  double t0, t1;
+
+  parsec_context_t* parsec;
+  int rc;
+  int rank, world;
+  parsec_data_collection_t taskdist;
+  parsec_parsec_micro_deps_taskpool_t *tp;
+
+  {
+    int provided;
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_SERIALIZED, &provided);
+  }
+  MPI_Comm_size(MPI_COMM_WORLD, &world);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  parsec = parsec_init(nthreads, &argc, &argv);
+
+  parsec_data_collection_init(&taskdist, world, rank);
+  taskdist.rank_of = rank_of;
+  taskdist.vpid_of = vpid_of;
+  taskdist.data_key = data_key;
+
+  tp = parsec_parsec_micro_deps_new(&taskdist, nrows, ncols);
+
+  /**
+   * Since we create a data on the fly, we need to tell the runtime the
+   * datatype of the DEFAULT type, so it can allocate the required memory
+   * space.
+   */
+  parsec_arena_datatype_construct( &tp->arenas_datatypes[PARSEC_parsec_micro_deps_DEFAULT_ARENA],
+                                   sizeof(int), PARSEC_ARENA_ALIGNMENT_SSE,
+                                   parsec_datatype_int_t );
+
+  rc = parsec_context_add_taskpool( parsec, (parsec_taskpool_t*)tp );
+  PARSEC_CHECK_ERROR(rc, "parsec_context_add_taskpool");
+  t0 = getWallTime();
+  rc = parsec_context_start(parsec);
+  PARSEC_CHECK_ERROR(rc, "parsec_context_start");
+  rc = parsec_context_wait(parsec);
+  PARSEC_CHECK_ERROR(rc, "parsec_context_wait");
+  t1 = getWallTime();
+  double time = t1 - t0;
+  double efficiency = (nrows * ncols * spinTime * 1e-6) / (time * nthreads);
+  printf("ParSEC nthreads: %d spinTime(us): %.3lf nrows: %d ncols: %ld ndeps: %d time(s): %.3lf efficiency %.3lf\n",
+         nthreads, spinTime, nrows, ncols, ndeps, time, efficiency);
+
+  parsec_taskpool_free((parsec_taskpool_t*)tp);
+  parsec_data_collection_destroy(&taskdist);
+
+  parsec_fini(&parsec);
+  MPI_Finalize();
+  return 0;
+}
+
+%}
