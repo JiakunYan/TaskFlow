@@ -154,11 +154,10 @@ private:
    using DepMap = libcuckoo::cuckoohash_map<TaskIdx, int, hash_int_N<TaskIdx>>;
  #else
    using DepMap = std::unordered_map<TaskIdx, int, hash_int_N<TaskIdx>>;
+   std::mutex depCounterLock;
  #endif
   
   DepMap depCounter;
-
-  std::mutex depCounterLock;
 
   std::function<void(TaskIdx)> task_fn;
   std::function<void(TaskIdx)> outdep_fn;

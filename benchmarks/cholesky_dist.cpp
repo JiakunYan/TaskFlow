@@ -270,7 +270,7 @@ void cholesky(int n_threads, int n, int N, int p, int q)
 
     // gemm
     gemm_tf.setAffinity([&](int3 ijk) {
-          return ((ijk[0] + ijk[1] * N + ijk[2] * N * N) % n_threads);
+          return ((ijk[0] + ijk[1] * N) % n_threads);
         })
         .setInDep([](int3 ijk) {
           int i = ijk[0];

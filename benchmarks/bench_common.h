@@ -1,7 +1,8 @@
 #ifndef TASKFLOW_BENCH_COMMON_H
 #define TASKFLOW_BENCH_COMMON_H
 
-#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/time.h>
 #include <getopt.h>
 
@@ -42,10 +43,13 @@ void check_buffer(const char *buffer, int len, char expect) {
   for (int i = 0; i < len; ++i) {
     if (buffer[i] != expect) {
       printf("check_buffer failed! buffer[%d](%d) != %d. ABORT!\n", i, buffer[i], expect);
-      abort();
+      exit(EXIT_FAILURE);
     }
   }
 }
+
+#ifdef __cplusplus
+#include <iostream>
 
 static inline double get_latency(double time, double n_msg) {
   return time / n_msg;
@@ -58,6 +62,7 @@ static inline double get_msgrate(double time, double n_msg) {
 static inline double get_bw(double time, size_t size, double n_msg) {
   return n_msg * size / time;
 }
+
 
 template<typename FUNC>
 static inline void RUN_VARY_MSG(std::pair<size_t, size_t> &&range,
@@ -102,5 +107,6 @@ static inline void RUN_VARY_MSG(std::pair<size_t, size_t> &&range,
     }
   }
 }
+#endif
 
 #endif // TASKFLOW_BENCH_COMMON_H

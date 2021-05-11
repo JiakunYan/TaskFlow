@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
   t1 = getWallTime();
   double time = t1 - t0;
   double efficiency = (nrows * ncols * spinTime * 1e-6) / (time * nthreads);
-  printf("ParSEC nthreads: %d spinTime(us): %.3lf nrows: %d ncols: %ld ndeps: %d time(s): %.3lf efficiency %.3lf\n",
+  printf("PaRSEC nthreads: %d spinTime(us): %.3lf nrows: %d ncols: %ld ndeps: %d time(s): %.3lf efficiency %.3lf\n",
          nthreads, spinTime, nrows, ncols, ndeps, time, efficiency);
 
   parsec_taskpool_free((parsec_taskpool_t*)tp);

@@ -13,9 +13,9 @@ input_path = "run/slurm_output.*"
 output_path = "draw/"
 edge_data = {
     "format": "(.+) nranks: (\d+) \[.+\] nthreads: (\d+) N: (\d+) n: (\d+) time: (\S+)(?:\s(.+))?",
-    "label": ["task", "nranks", "nthreads", "N", "n", "time", "extra"]
+    "label": ["task", "nranks", "nthreads", "N", "n", "Time(s)", "extra"]
 }
-all_labels = ["task", "ncores", "nranks", "nthreads", "N", "n", "time", "extra"]
+all_labels = ["task", "ncores", "nranks", "nthreads", "N", "n", "Time(s)", "extra"]
 
 def get_typed_value(value):
     if value == '-nan':
@@ -61,32 +61,54 @@ if __name__ == "__main__":
     df.to_csv(os.path.join(output_path, "{}.csv".format(name)))
 
     # df = pd.read_csv("draw/basic.csv")
-    df1 = df[df.apply(lambda row: row["N"] == 128, axis=1)]
+    df1 = df[df.apply(lambda row: row["N"] == 128 and row["n"] == 128 and row["extra"] == "", axis=1)]
     draw_config1 = {
-        "name": "strong scaling",
+        "name": "cholesky strong scaling",
         "x_key": "ncores",
-        "y_key": "time",
-        "tag_keys": ["task", "extra"],
+        "y_key": "Time(s)",
+        "tag_key": "task",
         "output": "draw/",
     }
-    draw_tags(draw_config1, df=df1)
+    draw_tag(draw_config1, df=df1)
 
-    df2 = df[df.apply(lambda row: row["N"] == int(128*np.sqrt(row["ncores"]/128)), axis=1)]
+    df1 = df[df.apply(lambda row: row["N"] == int(128*np.sqrt(row["ncores"]/128)) and row["n"] == 128 and row["extra"] == "", axis=1)]
     draw_config1 = {
-        "name": "weak scaling",
+        "name": "cholesky weak scaling",
         "x_key": "ncores",
-        "y_key": "time",
-        "tag_keys": ["task", "extra"],
+        "y_key": "Time(s)",
+        "tag_key": "task",
         "output": "draw/",
     }
-    draw_tags(draw_config1, df=df2, drawError=False)
+    draw_tag(draw_config1, df=df1)
 
-    df2 = df[df.apply(lambda row: row["nranks"] == 4, axis=1)]
+    df1 = df[df.apply(lambda row: row["nranks"] == 4 and row["N"] * row["n"] == 128 * 128 and row["extra"] == "", axis=1)]
     draw_config1 = {
-        "name": "granularity",
+        "name": "task granularity",
         "x_key": "n",
-        "y_key": "time",
-        "tag_keys": ["task"],
+        "y_key": "Time(s)",
+        "tag_key": "task",
         "output": "draw/",
     }
-    draw_tags(draw_config1, df=df2, drawError=False)
+    draw_tag(draw_config1, df=df1)
+
+    df["extra"] = df.apply(lambda row: "default" if row["extra"] == "" and row["task"] == "cholesky_dist" else row["extra"], axis=1)
+    df["extra"] = df.apply(lambda row: "std::unordered_map" if row["extra"] == "old_hashtable" else row["extra"], axis=1)
+    df1 = df[df.apply(lambda row: row["N"] == 128 and row["n"] == 128 and row["task"] == "cholesky_dist", axis=1)]
+    draw_config1 = {
+        "name": "cholesky strong scaling with different configuration",
+        "x_key": "ncores",
+        "y_key": "Time(s)",
+        "tag_key": "extra",
+        "output": "draw/",
+    }
+    draw_tag(draw_config1, df=df1)
+
+    df1 = df[df.apply(lambda row: row["N"] == int(128*np.sqrt(row["ncores"]/128)) and row["n"] == 128 and row["task"] == "cholesky_dist", axis=1)]
+    draw_config1 = {
+        "name": "cholesky weak scaling with different configuration",
+        "x_key": "ncores",
+        "y_key": "Time(s)",
+        "tag_key": "extra",
+        "output": "draw/",
+    }
+    draw_tag(draw_config1, df=df1)

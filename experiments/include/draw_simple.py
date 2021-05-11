@@ -9,7 +9,7 @@ import pandas as pd
 import sys,os
 import json
 
-def line_plot(title, xlabel, ylabel, data, fname='out.pdf', add_perfect=True, is_show=False, is_save=False):
+def line_plot(title, xlabel, ylabel, data, fname='out.pdf', add_perfect=True, is_show=False, is_save=False, render_fn=None):
     fig, ax = plt.subplots()
 
     domain = set()
@@ -57,12 +57,18 @@ def line_plot(title, xlabel, ylabel, data, fname='out.pdf', add_perfect=True, is
     if len(yticks) > 0: yticks.append(yticks[0]/2)
 
     ax.minorticks_off()
-    ax.set_xscale("log")
     ax.set_yscale("log")
+    ax.set_xscale("log")
     ax.set_xticks(domain)
     ax.set_xticklabels(list(map(lambda x: str(x), domain)))
     if len(yticks) > 0: ax.set_yticks(yticks)
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    if (len(yticks) < 5):
+        ax.yaxis.set_minor_formatter(FormatStrFormatter('%.2f'))
+    else:
+        ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+    ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
 
     plt.title(title)
     plt.xlabel(xlabel)
@@ -100,13 +106,14 @@ def draw_simple(config):
         json.dump(lines, outfile)
     line_plot(title, x_key, y_key, lines, os.path.join(config["output"], "{}.png".format(config["name"])), False, is_show=False, is_save=True)
 
-def draw_tag(config):
-    df = pd.read_csv(config["input"])
+def draw_tag(config, df = None, drawError = True):
+    if df is None:
+        df = pd.read_csv(config["input"])
     lines = []
     x_key = config["x_key"]
     y_key = config["y_key"]
     tag_key = config["tag_key"]
-    title = "{}_{}".format(config["name"], config["tag_key"])
+    title = "{}".format(config["name"])
 
     for tag in df[tag_key].unique():
         criterion = (df[tag_key] == tag)
@@ -124,7 +131,10 @@ def draw_tag(config):
             current_domain.append(float(x))
             current_value.append(float(y))
             current_error.append(float(error))
-        lines.append({'label': str(tag), 'domain': current_domain, 'range': current_value, 'error': current_error})
+        if drawError:
+            lines.append({'label': str(tag), 'domain': current_domain, 'range': current_value, 'error': current_error})
+        else:
+            lines.append({'label': str(tag), 'domain': current_domain, 'range': current_value})
 
     if len(lines) == 0:
         print("Error! Got 0 line!")
@@ -140,7 +150,7 @@ def draw_tags(config, df = None, drawError = True):
     x_key = config["x_key"]
     y_key = config["y_key"]
     tag_keys = config["tag_keys"]
-    title = "{}_{}".format(config["name"], config["tag_keys"])
+    title = "{}".format(config["name"])
 
     for index in df[tag_keys].drop_duplicates().index:
         criterion = True
@@ -162,10 +172,14 @@ def draw_tags(config, df = None, drawError = True):
             current_domain.append(float(x))
             current_value.append(float(y))
             current_error.append(float(error))
-        if drawError:
-            lines.append({'label': str(tags), 'domain': current_domain, 'range': current_value, 'error': current_error})
+        if "label" in config:
+            label = config["label"].format(*tags)
         else:
-            lines.append({'label': str(tags), 'domain': current_domain, 'range': current_value})
+            label = str(tags)
+        if drawError:
+            lines.append({'label': label, 'domain': current_domain, 'range': current_value, 'error': current_error})
+        else:
+            lines.append({'label': label, 'domain': current_domain, 'range': current_value})
 
     if len(lines) == 0:
         print("Error! Got 0 line!")

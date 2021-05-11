@@ -55,26 +55,29 @@ if __name__ == "__main__":
     else:
         print("get {} entries".format(df.shape[0]))
     df = df.reindex(columns=all_labels)
+    df["nthreads"] = df["nthreads"] + 1
     df = df.sort_values(["nthreads", "ndeps", "spinTime"])
     df.to_csv(os.path.join(output_path, "{}.csv".format(name)))
 
     # df = pd.read_csv("draw/basic.csv")
     df1 = df[df.apply(lambda row: row["ndeps"] == 1, axis=1)]
     draw_config1 = {
-        "name": "micro_deps1",
+        "name": "Efficiency under different task granularity",
         "x_key": "nthreads",
         "y_key": "efficiency",
         "tag_keys": ["task", "spinTime"],
+        "label": "{} {} us",
         "output": "draw/",
     }
     draw_tags(draw_config1, df=df1, drawError=False)
 
     df2 = df[df.apply(lambda row: row["spinTime"] == 100, axis=1)]
     draw_config2 = {
-        "name": "micro_deps2",
+        "name": "Efficiency under different dependency number",
         "x_key": "nthreads",
         "y_key": "efficiency",
         "tag_keys": ["task", "ndeps"],
+        "label": "{} {} deps",
         "output": "draw/",
     }
     draw_tags(draw_config2, df=df2, drawError=False)

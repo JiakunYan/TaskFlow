@@ -49,7 +49,6 @@ private:
   TFC_device_t device;
   int rank;
   int nranks;
-  bool isDrained;
   std::vector<ActiveMsg> activeMsgs;
   volatile bool toStop;
   std::thread *p_thread;

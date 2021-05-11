@@ -1,21 +1,13 @@
-#include <iostream>
-#include <array>
 #include "tf.hpp"
-
-using namespace std;
-
-using int2 = array<int, 2>;
-const int m = 5;
-const int n = 10;
-const int ndeps = 3;
-
+using int2 = std::array<int, 2>;
+const int m = 5, n = 10, ndeps = 3;
 int main() {
   tf::Context context(3);
   // define tasks
   tf::TaskClass<int2> helloWorld;
 
   tf::Communicator comm;
-  function<void(int2)> fn = [&](int2 k) {
+  std::function<void(int2)> fn = [&](int2 k) {
     context.signal(helloWorld, k);
   };
   auto am = comm.makeActiveMsg(fn);
@@ -30,10 +22,7 @@ int main() {
                k[0], k[1], context.rank_me(), context.rank_n(), comm.rank_me(), comm.rank_n());
       })
       .setInDep([](int2 k) {
-        if (k[1] == 0)
-          return 1;
-        else
-          return ndeps;
+        return (k[1] == 0)? 1 : ndeps;
       })
       .setOutDep([&](int2 k) {
         if (k[1] < n - 1) {
@@ -58,7 +47,6 @@ int main() {
   context.start(m);
   while (!context.tryJoin())
     comm.progress();
-  comm.drain();
   comm.barrier();
   return 0;
 }
