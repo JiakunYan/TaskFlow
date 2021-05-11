@@ -364,17 +364,17 @@ int main(int argc, char **argv)
 
   if (argc >= 6)
   {
-    nb_ = atoi(argv[5]);
+    nb_ = atoi(argv[5]); // height of block
   }
 
   if (argc >= 7)
   {
-    mb_ = atoi(argv[6]); // width of block
+    p_ = atoi(argv[6]); 
   }
 
   if (argc >= 8)
   {
-    nb_ = atoi(argv[7]);
+    q_ = atoi(argv[7]);
   }
 
   if (argc >= 9)
