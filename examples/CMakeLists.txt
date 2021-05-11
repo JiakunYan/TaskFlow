@@ -11,5 +11,8 @@ endif()
 add_executable(qr_gram-schmidt qr_gram-schmidt.cpp)
 target_link_libraries(qr_gram-schmidt PRIVATE tf-lib)
 
-add_executable(stencil stencil.cpp)
-target_link_libraries(stencil PRIVATE tf-lib)
+add_executable(stencil_2D stencil_2D.cpp)
+target_link_libraries(stencil_2D PRIVATE tf-lib)
+
+add_executable(stencil_1D stencil_1D.cpp)
+target_link_libraries(stencil_1D PRIVATE tf-lib)
