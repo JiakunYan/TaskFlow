@@ -31,9 +31,9 @@ target_link_libraries(cholesky_dist PRIVATE tf-lib)
 target_include_directories(cholesky_dist PRIVATE ${EIGEN3_INCLUDE_DIR})
 
 add_executable(stencil_1D_dist ../benchmarks/stencil_1D_dist.cpp)
-target_link_libraries(stencil_1D PRIVATE tf-lib)
+target_link_libraries(stencil_1D_dist PRIVATE tf-lib)
 
-add_executable(stencil_2D ../benchmarks/stencil_2D_dist.cpp)
+add_executable(stencil_2D_dist ../benchmarks/stencil_2D_dist.cpp)
 target_link_libraries(stencil_2D_dist PRIVATE tf-lib)
 
 add_mpi_executable(mpi_lat mpi_lat.cpp)

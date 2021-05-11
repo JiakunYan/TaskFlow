@@ -190,16 +190,16 @@ int main() {
   auto start = chrono::high_resolution_clock::now();
 
   // Start the context
-  context.start();
+  context.start(block_num);
   context.join();
   auto end = chrono::high_resolution_clock::now();
 
-  // for(int j = 0; j < N; j++){
-  //   for(int i = 0; i < M; i++){
-  //     cout << A[iter-1][(j)*M+i] << " ";
-  //   }
-  //   cout << endl;
-  // }
+  for(int j = 0; j < N; j++){
+    for(int i = 0; i < M; i++){
+      cout << A[iter-1][(j)*M+i] << " ";
+    }
+    cout << endl;
+  }
 
   chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(end - start);
   printf("%lf\n", time_span.count());

@@ -22,3 +22,6 @@ target_link_libraries(stencil_2D PRIVATE tf-lib)
 
 add_executable(stencil_1D stencil_1D.cpp)
 target_link_libraries(stencil_1D PRIVATE tf-lib)
+
+add_executable(stencil_1D_seq stencil_1D_seq.cpp)
+target_link_libraries(stencil_1D_seq PRIVATE tf-lib)
